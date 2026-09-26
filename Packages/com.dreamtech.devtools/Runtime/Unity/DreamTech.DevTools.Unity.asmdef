@@ -1,0 +1,24 @@
+{
+    "name": "DreamTech.DevTools.Unity",
+    "rootNamespace": "DreamTech.DevTools.Unity",
+    "references": [
+        "DreamTech.DevTools",
+        "UnityEngine.UI",
+        "Unity.InputSystem"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "1.0.0",
+            "define": "DREAMTECH_DEVTOOLS_INPUTSYSTEM"
+        }
+    ],
+    "noEngineReferences": false
+}

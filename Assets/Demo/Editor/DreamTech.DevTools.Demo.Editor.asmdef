@@ -1,0 +1,20 @@
+{
+    "name": "DreamTech.DevTools.Demo.Editor",
+    "rootNamespace": "DreamTech.DevTools.Demo.EditorTools",
+    "references": [
+        "DreamTech.DevTools",
+        "DreamTech.DevTools.Unity",
+        "DreamTech.DevTools.Demo"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

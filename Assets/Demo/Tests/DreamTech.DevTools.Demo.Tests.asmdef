@@ -1,0 +1,24 @@
+{
+    "name": "DreamTech.DevTools.Demo.Tests",
+    "rootNamespace": "DreamTech.DevTools.Demo.Tests",
+    "references": [
+        "DreamTech.DevTools",
+        "DreamTech.DevTools.Unity",
+        "DreamTech.DevTools.Demo",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
