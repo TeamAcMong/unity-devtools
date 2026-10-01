@@ -4,7 +4,7 @@ drives the HUD and the standard commands, then prints the DevTools lines of the 
 screenshots the script took (persistentDataPath/DevShots). Build first:
 
     python tools/unity-run.py method DreamTech.DevTools.Demo.EditorTools.DemoBuild.BuildWindows
-    python tools/player-smoke.py [--exe Builds/Demo/DevToolsDemo.exe] [--script "..."] [--out tools/.cache/smoke]
+    python tools/player-smoke.py [--exe Builds/Demo/DevToolsDemo.exe] [--script "..."] [--out tools/.cache/smoke] [--resolution 540x960]
 
 Exit code 1 when a command failed that the script did not expect to fail, or the player logged an exception.
 """
@@ -17,6 +17,7 @@ SCRIPT = [
     'wait 1', 'engine.screenshot true',
     'hud.show-panel quick', 'wait 0.5', 'engine.screenshot true',
     'hud.show-panel economy', 'wait 0.5', 'engine.screenshot true',
+    'hud.show-panel level', 'wait 0.5', 'engine.screenshot true',
     'economy.set-balance coins 12345', 'economy.set-all-items 7',
     'demo.start-level', 'wait 0.3',
     'engine.ui-at-point 0.5 0.75',          # under the open panel: the blocker must be the topmost hit
@@ -41,13 +42,15 @@ def main():
     ap.add_argument('--script', default='; '.join(SCRIPT))
     ap.add_argument('--out', default=os.path.join(ROOT, 'tools', '.cache', 'smoke'))
     ap.add_argument('--timeout', type=int, default=180)
+    ap.add_argument('--resolution', default='540x960', help='WIDTHxHEIGHT of the player window, e.g. 960x540 for landscape')
     a = ap.parse_args()
+    width, height = a.resolution.lower().split('x')
     shots = os.path.join(os.environ.get('USERPROFILE', ''), 'AppData', 'LocalLow', 'DefaultCompany', 'DevToolsDemo', 'DevShots')
     shutil.rmtree(shots, ignore_errors=True)
     shutil.rmtree(a.out, ignore_errors=True)
     os.makedirs(a.out)
     log = os.path.join(a.out, 'player.log')
-    cmd = [a.exe, '-screen-width', '540', '-screen-height', '960', '-screen-fullscreen', '0', '-logFile', log, '-devboot', a.script]
+    cmd = [a.exe, '-screen-width', width, '-screen-height', height, '-screen-fullscreen', '0', '-logFile', log, '-devboot', a.script]
     t0 = time.time()
     try:
         code = subprocess.run(cmd, timeout=a.timeout).returncode

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -25,6 +26,79 @@ namespace DreamTech.DevTools.Unity
 		static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 		static readonly float[] Sizes = { 0.42f, 0.62f, 0.9f };
 
+		/// <summary>Every color, size and timing of the HUD lives here; styles and layout read nothing else.</summary>
+		static class Theme
+		{
+			// colors
+			public static readonly Color PanelBackground = new Color(0.05f, 0.055f, 0.075f, 1f);
+			public static readonly Color PanelBorder = new Color(0.28f, 0.31f, 0.38f, 1f);
+			public static readonly Color ButtonNormal = new Color(0.22f, 0.24f, 0.28f, 1f);
+			public static readonly Color ButtonHover = new Color(0.30f, 0.33f, 0.38f, 1f);
+			public static readonly Color Positive = new Color(0.16f, 0.52f, 0.30f, 1f);
+			public static readonly Color Negative = new Color(0.55f, 0.20f, 0.20f, 1f);
+			public static readonly Color TabNormal = new Color(0.14f, 0.155f, 0.19f, 1f);
+			public static readonly Color TabSelected = new Color(0.18f, 0.24f, 0.36f, 1f);
+			public static readonly Color Accent = new Color(0.30f, 0.62f, 1f, 1f);
+			public static readonly Color FieldBackground = new Color(0.02f, 0.025f, 0.035f, 1f);
+			public static readonly Color FieldBorder = new Color(0.38f, 0.42f, 0.50f, 1f);
+			public static readonly Color Divider = new Color(0.30f, 0.34f, 0.42f, 1f);
+			public static readonly Color PillBackground = new Color(0.05f, 0.055f, 0.075f, 0.88f);
+			public static readonly Color PillErrorBackground = new Color(0.45f, 0.08f, 0.08f, 0.95f);
+			public static readonly Color TextPrimary = new Color(0.94f, 0.95f, 0.97f);
+			public static readonly Color TextSecondary = new Color(0.66f, 0.70f, 0.76f);
+			public static readonly Color TextDisabled = new Color(0.52f, 0.55f, 0.60f);
+			public static readonly Color TextCategory = new Color(0.55f, 0.75f, 1f);
+			public static readonly Color TextSuccess = new Color(0.55f, 0.92f, 0.6f);
+			public static readonly Color TextError = new Color(1f, 0.55f, 0.5f);
+			public static readonly Color TextPill = new Color(1f, 0.85f, 0.3f);
+			public static readonly Color FlashSuccess = new Color(0.2f, 0.9f, 0.4f, 0.34f);
+			public static readonly Color FlashError = new Color(1f, 0.25f, 0.2f, 0.38f);
+
+			// sizes (reference units, before the screen scale)
+			public const float TouchTarget = 44f;
+			public const float ButtonHeight = 40f;
+			public const float FieldHeight = 40f;
+			public const float TabHeight = 36f;
+			public const float TabScrollButtonWidth = 36f;
+			public const float TabUnderlineHeight = 3f;
+			public const float BlockedRowHeight = 34f;
+			public const float RunButtonWidth = 72f;
+			public const float ToggleButtonWidth = 64f;
+			public const float MinimumFlexWidth = 56f;
+			public const float PanelMargin = 4f;
+			public const float PanelPadding = 8f;
+			public const float MinimumPanelHeight = 240f;
+			public const float WatchLabelWidthFraction = 0.36f;
+			public const float BlockedReasonWidthFraction = 0.5f;
+			public const float ToastHeight = 22f;
+			public const int FontBody = 14;
+			public const int FontSmall = 12;
+			public const int FontTitle = 16;
+			public const int FontCategory = 13;
+
+			// opacity
+			public const float DefaultPanelAlpha = 0.97f;
+			public const float MinimumPanelAlpha = 0.9f;
+
+			// timing
+			public const float FlashSeconds = 0.6f;
+			public const float ToastSecondsOk = 3f;
+			public const float ToastSecondsError = 6f;
+			public const float TabScrollStepFraction = 0.6f;
+
+			// text
+			public const int ToastMaxCharacters = 110;
+			public const int PathTokenMinLength = 12;
+			public const string SearchPlaceholder = "Search commands...";
+			public const string FilterPlaceholder = "Filter values...";
+		}
+
+		struct FlashState
+		{
+			public float StartTime;
+			public bool Succeeded;
+		}
+
 		static DevToolsHud _instance;
 
 		DevRegistry _reg;
@@ -35,14 +109,24 @@ namespace DreamTech.DevTools.Unity
 		Vector2 _scroll, _logScroll, _pickScroll;
 		Vector2 _tabScroll;
 		Rect _tabStripRect;
+		readonly List<Rect> _tabRects = new List<Rect>();
+		bool _revealSelectedTab, _panelWasVisible;
 		bool _tabDragArmed, _tabDragging;
 		float _tabDragStartX, _tabDragScrollStartX;
+		readonly List<string> _tabsCache = new List<string>();
+		int _tabsCacheFrame = -1;
+		readonly List<DevCommand> _rowCommands = new List<DevCommand>();
+		readonly Dictionary<string, int> _categoryOrder = new Dictionary<string, int>();
+		int _rowCommandsFrame = -1;
 		int _size = 1;
 		bool _dockBottom;
-		float _userScale = 1f, _alpha = 0.92f;
+		float _userScale = 1f, _alpha = Theme.DefaultPanelAlpha;
 		Vector2 _pill = new Vector2(0f, 0.55f);
 		readonly HashSet<string> _fav = new HashSet<string>();
 		readonly Dictionary<DevCommand, string[]> _values = new Dictionary<DevCommand, string[]>();
+		readonly Dictionary<DevCommand, GUIContent> _labelContents = new Dictionary<DevCommand, GUIContent>();
+		readonly Dictionary<DevCommand, FlashState> _flashes = new Dictionary<DevCommand, FlashState>();
+		DevCommand _commandBeingRun;
 		string _toast;
 		bool _toastOk;
 		float _toastUntil;
@@ -74,7 +158,10 @@ namespace DreamTech.DevTools.Unity
 		Rect _panelRect, _pillRect, _screen;
 		RectTransform _blockPanel, _blockPill;
 
-		GUIStyle _box, _btn, _btnOn, _btnOff, _tabBtn, _tabBtnOn, _label, _small, _field, _title, _okText, _errText, _catHeader, _pillStyle, _pillErr;
+		GUIStyle _box, _btn, _btnSmall, _btnOn, _btnOff, _tabBtn, _tabBtnOn, _label, _small, _field, _searchField, _placeholder, _title, _okText, _errText, _catHeader, _pillStyle, _pillErr;
+		GUIStyle _commandLabel, _blockedLabel, _blockedReason, _toastText, _toastOkText;
+		bool _searchHasText, _filterHasText;
+		Texture2D _accentTexture, _dividerTexture;
 		int _stylesFor = -1;
 		readonly List<Texture2D> _textures = new List<Texture2D>();
 
@@ -105,6 +192,7 @@ namespace DreamTech.DevTools.Unity
 			_instance._open = true;
 			_instance._tab = t;
 			_instance._scroll = Vector2.zero;
+			_instance._revealSelectedTab = true;
 			return true;
 		}
 
@@ -130,6 +218,7 @@ namespace DreamTech.DevTools.Unity
 			}
 		}
 
+		/// <summary>User opacity of the panel. The panel is never drawn below <c>Theme.MinimumPanelAlpha</c>, so game text cannot bleed through.</summary>
 		public static float Opacity
 		{
 			get => _instance != null ? _instance._alpha : 1f;
@@ -164,7 +253,7 @@ namespace DreamTech.DevTools.Unity
 			_dockBottom = PlayerPrefs.GetInt(DevToolsKeys.HudDock, 0) == 1;
 			_tab = PlayerPrefs.GetString(DevToolsKeys.HudTab, TabQuick);
 			_userScale = Mathf.Clamp(PlayerPrefs.GetFloat(DevToolsKeys.HudScale, 1f), 0.5f, 2.5f);
-			_alpha = Mathf.Clamp(PlayerPrefs.GetFloat(DevToolsKeys.HudAlpha, 0.92f), 0.3f, 1f);
+			_alpha = Mathf.Clamp(PlayerPrefs.GetFloat(DevToolsKeys.HudAlpha, Theme.DefaultPanelAlpha), 0.3f, 1f);
 			_hidden = PlayerPrefs.GetInt(DevToolsKeys.HudHidden, _settings.StartHidden ? 1 : 0) == 1;
 			var parts = PlayerPrefs.GetString(DevToolsKeys.HudPill, "").Split(',');
 			if (parts.Length == 2 && float.TryParse(parts[0], NumberStyles.Float, Inv, out float px) && float.TryParse(parts[1], NumberStyles.Float, Inv, out float py))
@@ -182,9 +271,34 @@ namespace DreamTech.DevTools.Unity
 
 		void OnExecuted(DevLogEntry e)
 		{
-			_toast = e.Message.Length > 0 ? e.Message : e.Line;
+			string full = e.Message.Length > 0 ? e.Message : e.Line;
+			_toast = ShortenForToast(full);
 			_toastOk = e.Ok;
-			_toastUntil = Time.realtimeSinceStartup + (e.Ok ? 3f : 6f);
+			_toastUntil = Time.realtimeSinceStartup + (e.Ok ? Theme.ToastSecondsOk : Theme.ToastSecondsError);
+			if (_commandBeingRun != null)
+				_flashes[_commandBeingRun] = new FlashState { StartTime = Time.unscaledTime, Succeeded = e.Ok };
+		}
+
+		/// <summary>Toast text: long file paths become their file name and the whole thing is capped; the full text stays in the Log tab.</summary>
+		static string ShortenForToast(string text)
+		{
+			var sb = new StringBuilder(text.Length);
+			int start = 0;
+			while (start < text.Length)
+			{
+				int end = text.IndexOf(' ', start);
+				if (end < 0) end = text.Length;
+				int length = end - start;
+				int cut = -1;
+				if (length >= Theme.PathTokenMinLength)
+					cut = Math.Max(text.LastIndexOf('/', end - 1, length), text.LastIndexOf('\\', end - 1, length));
+				if (cut >= start) sb.Append(text, cut + 1, end - cut - 1);
+				else sb.Append(text, start, length);
+				if (end < text.Length) sb.Append(' ');
+				start = end + 1;
+			}
+			if (sb.Length > Theme.ToastMaxCharacters) sb.Length = Theme.ToastMaxCharacters - 3; else return sb.ToString();
+			return sb.Append("...").ToString();
 		}
 
 		void Update()
@@ -272,12 +386,19 @@ namespace DreamTech.DevTools.Unity
 		void OnGUI()
 		{
 			HandleKeys(Event.current);
-			if (_hidden || SuppressDrawing) return;
+			if (_hidden || SuppressDrawing)
+			{
+				_panelWasVisible = false;
+				return;
+			}
 			float baseScale = Mathf.Min(Screen.width / 540f, Screen.height / 960f);
 			if (Screen.width > Screen.height) baseScale = Mathf.Min(Screen.width / 960f, Screen.height / 540f);
 			_scale = Mathf.Max(0.5f, baseScale * _userScale);
-			int key = Mathf.RoundToInt(_alpha * 100);
+			int key = Mathf.RoundToInt(Mathf.Max(_alpha, Theme.MinimumPanelAlpha) * 100);
 			if (_box == null || _stylesFor != key) BuildStyles(key);
+			bool panelVisible = _open;
+			if (panelVisible && !_panelWasVisible) _revealSelectedTab = true;
+			_panelWasVisible = panelVisible;
 			GUI.depth = -1000;
 			var prev = GUI.matrix;
 			GUI.matrix = Matrix4x4.Scale(new Vector3(_scale, _scale, 1f));
@@ -313,7 +434,7 @@ namespace DreamTech.DevTools.Unity
 			// Rebuilt a few times per second (or when the error count changes), not on every IMGUI event.
 			if (_pillContent == null || errors != _pillErrors || Time.unscaledTime - _pillBuiltAt > 0.25f)
 			{
-				var sb = new System.Text.StringBuilder("DEV ").Append(_fps.ToString("0", Inv));
+				var sb = new StringBuilder("DEV ").Append(_fps.ToString("0", Inv));
 				foreach (var w in _reg.Watches)
 					if (w.Pinned && _watchCache.TryGetValue(w, out string v))
 						sb.Append("  ").Append(w.Label).Append(' ').Append(v);
@@ -370,80 +491,41 @@ namespace DreamTech.DevTools.Unity
 			}
 		}
 
+		/// <summary>Tab names, rebuilt at most once per frame (OnGUI runs several times a frame and layout needs a stable list).</summary>
 		List<string> Tabs()
 		{
-			var tabs = new List<string> { TabQuick };
-			tabs.AddRange(_reg.Categories);
-			if (_reg.Presets.Count > 0) tabs.Add(TabScenarios);
-			tabs.Add(TabWatch);
-			tabs.Add(TabConsole);
-			tabs.Add(TabLog);
-			return tabs;
+			if (_tabsCacheFrame == Time.frameCount && _tabsCache.Count > 0) return _tabsCache;
+			_tabsCacheFrame = Time.frameCount;
+			_tabsCache.Clear();
+			_tabsCache.Add(TabQuick);
+			for (int i = 0; i < _reg.Categories.Count; i++) _tabsCache.Add(_reg.Categories[i]);
+			if (_reg.Presets.Count > 0) _tabsCache.Add(TabScenarios);
+			_tabsCache.Add(TabWatch);
+			_tabsCache.Add(TabConsole);
+			_tabsCache.Add(TabLog);
+			return _tabsCache;
 		}
 
 		void DrawPanel()
 		{
-			float h = Mathf.Max(240f, _screen.height * Sizes[_size]);
-			float y = _dockBottom ? _screen.yMax - h - 4 : _screen.y + 4;
-			_panelRect = new Rect(_screen.x + 4, y, _screen.width - 8, h);
+			float h = Mathf.Max(Theme.MinimumPanelHeight, _screen.height * Sizes[_size]);
+			float y = _dockBottom ? _screen.yMax - h - Theme.PanelMargin : _screen.y + Theme.PanelMargin;
+			_panelRect = new Rect(_screen.x + Theme.PanelMargin, y, _screen.width - Theme.PanelMargin * 2f, h);
 			GUI.Box(_panelRect, GUIContent.none, _box);
-			GUILayout.BeginArea(new Rect(_panelRect.x + 6, _panelRect.y + 6, _panelRect.width - 12, _panelRect.height - 12));
+			float pad = Theme.PanelPadding;
+			GUILayout.BeginArea(new Rect(_panelRect.x + pad, _panelRect.y + pad, _panelRect.width - pad * 2f, _panelRect.height - pad * 2f));
 
-			GUILayout.BeginHorizontal();
-			GUILayout.Label(string.IsNullOrEmpty(_settings.Title) ? "DevTools" : _settings.Title, _title);
-			GUILayout.FlexibleSpace();
-			GUILayout.Label(_fps.ToString("0", Inv) + " fps" + (DevToolsHost.ErrorCount > 0 ? "  " + DevToolsHost.ErrorCount + " err" : ""), DevToolsHost.ErrorCount > 0 ? _errText : _small, GUILayout.ExpandWidth(false));
-			if (GUILayout.Button(_dockBottom ? "^" : "v", _btn, GUILayout.Width(34)))
-			{
-				_dockBottom = !_dockBottom;
-				PlayerPrefs.SetInt(DevToolsKeys.HudDock, _dockBottom ? 1 : 0);
-			}
-			if (GUILayout.Button(Sizes[_size] < 0.5f ? "S" : Sizes[_size] < 0.8f ? "M" : "L", _btn, GUILayout.Width(34)))
-			{
-				_size = (_size + 1) % Sizes.Length;
-				PlayerPrefs.SetInt(DevToolsKeys.HudSize, _size);
-			}
-			if (GUILayout.Button("X", _btn, GUILayout.Width(34))) _open = false;
-			GUILayout.EndHorizontal();
-
+			DrawHeader();
 			var tabs = Tabs();
 			if (!tabs.Contains(_tab)) _tab = TabQuick;
-			// One-row tab strip that scrolls sideways: finger/mouse drag, mouse wheel, or the ‹ › buttons.
-			GUILayout.BeginHorizontal();
-			if (GUILayout.Button("‹", _tabBtn, GUILayout.Width(28))) _tabScroll.x = Mathf.Max(0, _tabScroll.x - _tabStripRect.width * 0.6f);
-			_tabScroll = GUILayout.BeginScrollView(_tabScroll, false, false, GUIStyle.none, GUIStyle.none, GUILayout.Height(_tabBtn.fixedHeight + 6));
-			GUILayout.BeginHorizontal();
-			foreach (string t in tabs)
-				if (GUILayout.Button(t, t == _tab ? _tabBtnOn : _tabBtn))
-				{
-					_tab = t;
-					_scroll = Vector2.zero;
-					_pickCmd = null;
-					PlayerPrefs.SetString(DevToolsKeys.HudTab, t);
-				}
-			GUILayout.EndHorizontal();
-			GUILayout.EndScrollView();
-			_tabScroll = DragTabStrip(_tabScroll);
-			if (GUILayout.Button("›", _tabBtn, GUILayout.Width(28))) _tabScroll.x += _tabStripRect.width * 0.6f;
-			GUILayout.EndHorizontal();
+			DrawTabStrip(tabs);
 
 			if (_pickCmd != null) DrawPicker();
 			else if (_tab == TabConsole) DrawConsole();
 			else if (_tab == TabLog) DrawLog();
 			else
 			{
-				if (_tab == TabQuick || _tab == TabWatch)
-				{
-					GUILayout.BeginHorizontal();
-					GUILayout.Label("Search", _small, GUILayout.ExpandWidth(false));
-					_search = GUILayout.TextField(_search, _field);
-					if (_search.Length > 0 && GUILayout.Button("X", _btn, GUILayout.Width(34)))
-					{
-						_search = "";
-						GUI.FocusControl(null);
-					}
-					GUILayout.EndHorizontal();
-				}
+				if (_tab == TabQuick || _tab == TabWatch) DrawSearchField(ref _search, ref _searchHasText, "dt.search", Theme.SearchPlaceholder);
 				_scroll = BeginDragScroll(_scroll);
 				if (_tab == TabWatch) DrawWatches(null, false);
 				else if (_tab == TabQuick) DrawQuick();
@@ -451,7 +533,8 @@ namespace DreamTech.DevTools.Unity
 				else
 				{
 					DrawWatches(_tab, false);
-					foreach (var c in _reg.InCategory(_tab).ToList()) DrawCommand(c, false);
+					RefreshRowCommands();
+					for (int i = 0; i < _rowCommands.Count; i++) DrawCommand(_rowCommands[i], false);
 				}
 				_scroll = EndDragScroll(_scroll);
 			}
@@ -459,52 +542,164 @@ namespace DreamTech.DevTools.Unity
 			if (_confirm != null && Time.realtimeSinceStartup < _confirmUntil)
 			{
 				GUILayout.BeginHorizontal();
-				GUILayout.Label("Run '" + _confirm.Label + "'?", _errText);
-				if (GUILayout.Button("Yes", _btnOff, GUILayout.Width(70)))
+				GUILayout.Label("Run '" + _confirm.Label + "'?", _errText, GUILayout.MinWidth(0));
+				if (GUILayout.Button("Yes", _btnOff, GUILayout.Width(Theme.RunButtonWidth)))
 				{
 					var c = _confirm;
 					_confirm = null;
 					Run(c);
 				}
-				if (GUILayout.Button("No", _btn, GUILayout.Width(70))) _confirm = null;
+				if (GUILayout.Button("No", _btn, GUILayout.Width(Theme.RunButtonWidth))) _confirm = null;
 				GUILayout.EndHorizontal();
 			}
 			else if (_toast != null && Time.realtimeSinceStartup < _toastUntil)
-				GUILayout.Label(_toast.Length > 300 ? _toast.Substring(0, 300) + "..." : _toast, _toastOk ? _okText : _errText);
+				GUILayout.Label(_toast, _toastOk ? _toastOkText : _toastText, GUILayout.Width(_panelRect.width - pad * 2f), GUILayout.Height(Theme.ToastHeight));
 			GUILayout.EndArea();
 		}
+
+		void DrawHeader()
+		{
+			GUILayout.BeginHorizontal();
+			GUILayout.Label(string.IsNullOrEmpty(_settings.Title) ? "DevTools" : _settings.Title, _title);
+			GUILayout.FlexibleSpace();
+			GUILayout.Label(_fps.ToString("0", Inv) + " fps" + (DevToolsHost.ErrorCount > 0 ? "  " + DevToolsHost.ErrorCount + " err" : ""), DevToolsHost.ErrorCount > 0 ? _errText : _small, GUILayout.ExpandWidth(false));
+			if (GUILayout.Button(_dockBottom ? "^" : "v", _btnSmall, GUILayout.Width(Theme.TouchTarget)))
+			{
+				_dockBottom = !_dockBottom;
+				PlayerPrefs.SetInt(DevToolsKeys.HudDock, _dockBottom ? 1 : 0);
+			}
+			if (GUILayout.Button(Sizes[_size] < 0.5f ? "S" : Sizes[_size] < 0.8f ? "M" : "L", _btnSmall, GUILayout.Width(Theme.TouchTarget)))
+			{
+				_size = (_size + 1) % Sizes.Length;
+				PlayerPrefs.SetInt(DevToolsKeys.HudSize, _size);
+			}
+			if (GUILayout.Button("X", _btnSmall, GUILayout.Width(Theme.TouchTarget))) _open = false;
+			GUILayout.EndHorizontal();
+		}
+
+		/// <summary>One-row tab strip that scrolls sideways (finger/mouse drag, wheel, the ‹ › buttons); the selected tab has an accent bar and is scrolled into view when asked.</summary>
+		void DrawTabStrip(List<string> tabs)
+		{
+			var e = Event.current;
+			bool repaint = e.type == EventType.Repaint;
+			GUILayout.BeginHorizontal();
+			if (GUILayout.Button("‹", _tabBtn, GUILayout.Width(Theme.TabScrollButtonWidth))) _tabScroll.x = Mathf.Max(0, _tabScroll.x - _tabStripRect.width * Theme.TabScrollStepFraction);
+			_tabScroll = GUILayout.BeginScrollView(_tabScroll, false, false, GUIStyle.none, GUIStyle.none, GUILayout.Height(Theme.TabHeight + 2f));
+			GUILayout.BeginHorizontal();
+			while (_tabRects.Count < tabs.Count) _tabRects.Add(default);
+			int selectedIndex = -1;
+			for (int i = 0; i < tabs.Count; i++)
+			{
+				string t = tabs[i];
+				bool selected = t == _tab;
+				if (selected) selectedIndex = i;
+				if (GUILayout.Button(t, selected ? _tabBtnOn : _tabBtn))
+				{
+					_tab = t;
+					_scroll = Vector2.zero;
+					_pickCmd = null;
+					PlayerPrefs.SetString(DevToolsKeys.HudTab, t);
+				}
+				if (repaint)
+				{
+					var r = GUILayoutUtility.GetLastRect();
+					_tabRects[i] = r;
+					if (selected) GUI.DrawTexture(new Rect(r.x, r.yMax - Theme.TabUnderlineHeight, r.width, Theme.TabUnderlineHeight), _accentTexture);
+				}
+			}
+			GUILayout.EndHorizontal();
+			GUILayout.EndScrollView();
+			_tabScroll = DragTabStrip(_tabScroll);
+			if (GUILayout.Button("›", _tabBtn, GUILayout.Width(Theme.TabScrollButtonWidth))) _tabScroll.x += _tabStripRect.width * Theme.TabScrollStepFraction;
+			GUILayout.EndHorizontal();
+
+			if (repaint && _revealSelectedTab && selectedIndex >= 0 && _tabStripRect.width > 1f && _tabRects[selectedIndex].width > 1f)
+			{
+				var selectedRect = _tabRects[selectedIndex];
+				float contentWidth = _tabRects[tabs.Count - 1].xMax;
+				float target = selectedRect.center.x - _tabStripRect.width * 0.5f;
+				_tabScroll.x = Mathf.Clamp(target, 0f, Mathf.Max(0f, contentWidth - _tabStripRect.width));
+				_revealSelectedTab = false;
+			}
+		}
+
+		/// <summary>Fills <see cref="_rowCommands"/> for the current tab; rebuilt once per frame so layout and repaint see the same list.</summary>
+		void RefreshRowCommands()
+		{
+			if (_rowCommandsFrame == Time.frameCount) return;
+			_rowCommandsFrame = Time.frameCount;
+			_rowCommands.Clear();
+			if (_tab == TabQuick)
+			{
+				if (_search.Length > 0) _rowCommands.AddRange(_reg.Search(_search));
+				else
+					for (int i = 0; i < _reg.Commands.Count; i++)
+					{
+						var c = _reg.Commands[i];
+						if (c.Quick || _fav.Contains(c.Id)) _rowCommands.Add(c);
+					}
+				_categoryOrder.Clear();
+				for (int i = 0; i < _reg.Categories.Count; i++)
+					if (!_categoryOrder.ContainsKey(_reg.Categories[i])) _categoryOrder[_reg.Categories[i]] = _categoryOrder.Count;
+				// stable insertion sort by category order (lists are short; keeps declaration order inside a category)
+				for (int i = 1; i < _rowCommands.Count; i++)
+				{
+					var item = _rowCommands[i];
+					int rank = CategoryRank(item);
+					int j = i - 1;
+					while (j >= 0 && CategoryRank(_rowCommands[j]) > rank)
+					{
+						_rowCommands[j + 1] = _rowCommands[j];
+						j--;
+					}
+					_rowCommands[j + 1] = item;
+				}
+			}
+			else
+				for (int i = 0; i < _reg.Commands.Count; i++)
+					if (_reg.Commands[i].Category == _tab) _rowCommands.Add(_reg.Commands[i]);
+		}
+
+		int CategoryRank(DevCommand c) => _categoryOrder.TryGetValue(c.Category, out int index) ? index : -1;
 
 		void DrawQuick()
 		{
 			bool searching = _search.Length > 0;
-			var list = searching ? _reg.Search(_search).ToList() : _reg.Commands.Where(c => c.Quick || _fav.Contains(c.Id)).ToList();
+			RefreshRowCommands();
 			if (!searching)
 			{
 				DrawWatches(null, true);
-				if (list.Count == 0) GUILayout.Label("Star (☆) a command in any tab to keep it here.", _small);
+				if (_rowCommands.Count == 0) GUILayout.Label("Star (☆) a command in any tab to keep it here.", _small);
 			}
 			string cat = null;
-			var categoryIndex = new Dictionary<string, int>();
-			foreach (var category in _reg.Categories)
-				if (!categoryIndex.ContainsKey(category)) categoryIndex[category] = categoryIndex.Count;
-			foreach (var c in list.OrderBy(c => categoryIndex.TryGetValue(c.Category, out int index) ? index : -1))
+			for (int i = 0; i < _rowCommands.Count; i++)
 			{
+				var c = _rowCommands[i];
 				if (c.Category != cat)
 				{
 					cat = c.Category;
-					GUILayout.Label(cat, _catHeader);
+					DrawCategoryHeader(cat);
 				}
 				DrawCommand(c, searching);
 			}
 		}
 
+		void DrawCategoryHeader(string category)
+		{
+			GUILayout.Label(category, _catHeader);
+			if (Event.current.type == EventType.Repaint)
+			{
+				var r = GUILayoutUtility.GetLastRect();
+				GUI.DrawTexture(new Rect(r.x + 4f, r.yMax - 1f, r.width - 8f, 1f), _dividerTexture);
+			}
+		}
+
 		void DrawScenarios()
 		{
-			foreach (var p in _reg.Presets.ToList())
+			for (int i = 0; i < _reg.Presets.Count; i++)
 			{
-				GUILayout.BeginHorizontal();
+				var p = _reg.Presets[i];
 				if (GUILayout.Button(p.Name, _btn)) DevTools.RunScript(p.Script, p.Name);
-				GUILayout.EndHorizontal();
 				GUILayout.Label("   " + string.Join("; ", DevScriptRun.Split(p.Script)), _small);
 			}
 			if (DevTools.RunningScripts.Count > 0 && GUILayout.Button("Cancel running scripts (" + DevTools.RunningScripts.Count + ")", _btnOff)) DevTools.CancelScripts();
@@ -521,50 +716,91 @@ namespace DreamTech.DevTools.Unity
 				if (category == null && !pinnedOnly && w.Category != cat)
 				{
 					cat = w.Category;
-					GUILayout.Label(cat, _catHeader);
+					DrawCategoryHeader(cat);
 				}
 				GUILayout.BeginHorizontal();
-				GUILayout.Label(w.Label, _small, GUILayout.Width(Mathf.Min(170f, _panelRect.width * 0.36f)));
-				GUILayout.Label(_watchCache.TryGetValue(w, out string v) ? v : "...", _label);
+				GUILayout.Label(w.Label, _small, GUILayout.Width(_panelRect.width * Theme.WatchLabelWidthFraction));
+				GUILayout.Label(_watchCache.TryGetValue(w, out string v) ? v : "...", _label, GUILayout.MinWidth(0));
 				GUILayout.EndHorizontal();
 			}
+		}
+
+		bool DrawStar(DevCommand c)
+		{
+			if (!GUILayout.Button(_fav.Contains(c.Id) ? "★" : "☆", _btnSmall, GUILayout.Width(Theme.TouchTarget))) return false;
+			if (!_fav.Remove(c.Id)) _fav.Add(c.Id);
+			PlayerPrefs.SetString(DevToolsKeys.HudFavorites, string.Join("|", _fav));
+			return true;
+		}
+
+		GUIContent LabelContent(DevCommand c)
+		{
+			if (!_labelContents.TryGetValue(c, out var content)) _labelContents[c] = content = new GUIContent(c.Label, c.Help);
+			return content;
 		}
 
 		void DrawCommand(DevCommand c, bool showHelp)
 		{
 			string blocked = _reg.BlockedReason(c);
-			bool prevEnabled = GUI.enabled;
-			GUILayout.BeginHorizontal();
-			if (GUILayout.Button(_fav.Contains(c.Id) ? "★" : "☆", _btn, GUILayout.Width(30)))
+			GUILayout.BeginVertical();
+			if (blocked != null)
 			{
-				if (!_fav.Remove(c.Id)) _fav.Add(c.Id);
-				PlayerPrefs.SetString(DevToolsKeys.HudFavorites, string.Join("|", _fav));
+				// compact: star, dimmed label, reason on the same line (no big disabled button)
+				GUILayout.BeginHorizontal();
+				DrawStar(c);
+				GUILayout.Label(c.Label, _blockedLabel, GUILayout.MinWidth(0), GUILayout.Height(Theme.BlockedRowHeight));
+				GUILayout.Label(blocked, _blockedReason, GUILayout.MaxWidth(_panelRect.width * Theme.BlockedReasonWidthFraction), GUILayout.Height(Theme.BlockedRowHeight));
+				GUILayout.EndHorizontal();
 			}
-			GUI.enabled = prevEnabled && blocked == null;
-			var label = new GUIContent(c.Label, c.Help);
-			if (c.Kind == DevCommandKind.Toggle)
+			else if (c.Kind == DevCommandKind.Toggle)
 			{
 				bool on = false;
 				try { on = c.State(); }
 				catch { }
-				if (GUILayout.Button(label, _btn)) Run(c, on ? "off" : "on");
-				if (GUILayout.Button(on ? "ON" : "OFF", on ? _btnOn : _btnOff, GUILayout.Width(56))) Run(c, on ? "off" : "on");
+				GUILayout.BeginHorizontal();
+				DrawStar(c);
+				if (GUILayout.Button(LabelContent(c), _btn, GUILayout.MinWidth(0))) Run(c, on ? "off" : "on");
+				if (GUILayout.Button(on ? "ON" : "OFF", on ? _btnOn : _btnOff, GUILayout.Width(Theme.ToggleButtonWidth))) Run(c, on ? "off" : "on");
+				GUILayout.EndHorizontal();
 			}
 			else if (c.Params.Length == 0)
 			{
-				if (GUILayout.Button(label, _btn)) Ask(c);
+				GUILayout.BeginHorizontal();
+				DrawStar(c);
+				if (GUILayout.Button(LabelContent(c), _btn, GUILayout.MinWidth(0))) Ask(c);
+				GUILayout.EndHorizontal();
 			}
 			else
 			{
-				GUILayout.Label(c.Label, _label, GUILayout.Width(Mathf.Min(150f, _panelRect.width * 0.3f)));
+				// line 1: star, label (shrinks), Run (always fully visible); line 2: parameters, which share the width
+				GUILayout.BeginHorizontal();
+				DrawStar(c);
+				GUILayout.Label(LabelContent(c), _commandLabel, GUILayout.MinWidth(0), GUILayout.Height(Theme.TouchTarget));
+				if (GUILayout.Button("Run", _btnOn, GUILayout.Width(Theme.RunButtonWidth))) Ask(c);
+				GUILayout.EndHorizontal();
+				GUILayout.BeginHorizontal();
+				GUILayout.Space(Theme.TouchTarget + 4f);
 				var vals = Values(c);
 				for (int i = 0; i < c.Params.Length; i++) DrawParam(c, i, vals);
-				if (GUILayout.Button("Run", _btnOn, GUILayout.Width(52))) Ask(c);
+				GUILayout.EndHorizontal();
 			}
-			GUI.enabled = prevEnabled;
-			GUILayout.EndHorizontal();
-			if (blocked != null) GUILayout.Label("   " + blocked, _small);
-			else if (showHelp && !string.IsNullOrEmpty(c.Help)) GUILayout.Label("   " + c.Help, _small);
+			if (blocked == null && showHelp && !string.IsNullOrEmpty(c.Help)) GUILayout.Label("   " + c.Help, _small);
+			GUILayout.EndVertical();
+			DrawFlash(c);
+		}
+
+		/// <summary>Green / red tint over a command row right after it ran; fades out in <see cref="Theme.FlashSeconds"/> of unscaled time.</summary>
+		void DrawFlash(DevCommand c)
+		{
+			if (Event.current.type != EventType.Repaint || !_flashes.TryGetValue(c, out var flash)) return;
+			float age = Time.unscaledTime - flash.StartTime;
+			if (age >= Theme.FlashSeconds) return;
+			var tint = flash.Succeeded ? Theme.FlashSuccess : Theme.FlashError;
+			tint.a *= 1f - age / Theme.FlashSeconds;
+			var previous = GUI.color;
+			GUI.color = tint;
+			GUI.DrawTexture(GUILayoutUtility.GetLastRect(), Texture2D.whiteTexture);
+			GUI.color = previous;
 		}
 
 		string[] Values(DevCommand c)
@@ -585,13 +821,13 @@ namespace DreamTech.DevTools.Unity
 				case DevParamKind.Bool:
 				{
 					bool on = vals[i] == "true";
-					if (GUILayout.Button(p.Name + (on ? ": on" : ": off"), on ? _btnOn : _btn, GUILayout.ExpandWidth(false))) vals[i] = on ? "false" : "true";
+					if (GUILayout.Button(p.Name + (on ? ": on" : ": off"), on ? _btnOn : _btn, GUILayout.MinWidth(Theme.MinimumFlexWidth))) vals[i] = on ? "false" : "true";
 					break;
 				}
 				case DevParamKind.Choice:
 				{
 					string shown = string.IsNullOrEmpty(vals[i]) ? "<" + p.Name + ">" : vals[i];
-					if (GUILayout.Button(shown + " v", _btn, GUILayout.MinWidth(80)))
+					if (GUILayout.Button(shown + " v", _btn, GUILayout.MinWidth(Theme.MinimumFlexWidth)))
 					{
 						_pickCmd = c;
 						_pickParam = i;
@@ -601,30 +837,44 @@ namespace DreamTech.DevTools.Unity
 					break;
 				}
 				case DevParamKind.Int:
-					if (GUILayout.Button("-", _btn, GUILayout.Width(28))) vals[i] = Step(vals[i], -1);
-					vals[i] = GUILayout.TextField(vals[i] ?? "", _field, GUILayout.MinWidth(54));
-					if (GUILayout.Button("+", _btn, GUILayout.Width(28))) vals[i] = Step(vals[i], +1);
+					if (GUILayout.Button("-", _btnSmall, GUILayout.Width(Theme.TouchTarget))) vals[i] = Step(vals[i], -1);
+					vals[i] = GUILayout.TextField(vals[i] ?? "", _field, GUILayout.MinWidth(Theme.MinimumFlexWidth));
+					if (GUILayout.Button("+", _btnSmall, GUILayout.Width(Theme.TouchTarget))) vals[i] = Step(vals[i], +1);
 					break;
 				default:
-					vals[i] = GUILayout.TextField(vals[i] ?? "", _field, GUILayout.MinWidth(60));
+					vals[i] = GUILayout.TextField(vals[i] ?? "", _field, GUILayout.MinWidth(Theme.MinimumFlexWidth));
 					break;
 			}
 		}
 
 		static string Step(string v, int d) => (long.TryParse(v, NumberStyles.Integer, Inv, out long n) ? n + d : d).ToString(Inv);
 
+		/// <summary>Bordered text field with placeholder text and a clear (×) button. The × button follows the text state captured at Layout.</summary>
+		void DrawSearchField(ref string text, ref bool hadText, string controlName, string placeholder)
+		{
+			if (Event.current.type == EventType.Layout) hadText = text.Length > 0; // decided on Layout only, so Layout and Repaint agree even when a key changes the text in between
+			GUILayout.BeginHorizontal();
+			GUI.SetNextControlName(controlName);
+			text = GUILayout.TextField(text, _searchField);
+			var fieldRect = GUILayoutUtility.GetLastRect();
+			if (Event.current.type == EventType.Repaint && !hadText && GUI.GetNameOfFocusedControl() != controlName)
+				GUI.Label(fieldRect, placeholder, _placeholder);
+			if (hadText && GUILayout.Button("×", _btnSmall, GUILayout.Width(Theme.TouchTarget)))
+			{
+				text = "";
+				GUI.FocusControl(null);
+			}
+			GUILayout.EndHorizontal();
+		}
+
 		void DrawPicker()
 		{
 			var p = _pickCmd.Params[_pickParam];
 			GUILayout.BeginHorizontal();
-			GUILayout.Label(_pickCmd.Label + " · " + p.Name, _catHeader);
-			GUILayout.FlexibleSpace();
-			bool cancel = GUILayout.Button("Cancel", _btn, GUILayout.Width(80));
+			GUILayout.Label(_pickCmd.Label + " · " + p.Name, _catHeader, GUILayout.MinWidth(0));
+			bool cancel = GUILayout.Button("Cancel", _btn, GUILayout.Width(Theme.RunButtonWidth + 8f));
 			GUILayout.EndHorizontal();
-			GUILayout.BeginHorizontal();
-			GUILayout.Label("Filter", _small, GUILayout.ExpandWidth(false));
-			_pickFilter = GUILayout.TextField(_pickFilter, _field);
-			GUILayout.EndHorizontal();
+			DrawSearchField(ref _pickFilter, ref _filterHasText, "dt.filter", Theme.FilterPlaceholder);
 			IList<string> options;
 			try { options = p.Options?.Invoke() ?? Array.Empty<string>(); }
 			catch (Exception e) { options = new[] { "<" + e.Message + ">" }; }
@@ -685,8 +935,8 @@ namespace DreamTech.DevTools.Unity
 			}
 			GUILayout.BeginHorizontal();
 			GUI.SetNextControlName("dt.console");
-			_consoleLine = GUILayout.TextField(_consoleLine, _field);
-			if (GUILayout.Button("Run", _btnOn, GUILayout.Width(56))) SubmitConsole();
+			_consoleLine = GUILayout.TextField(_consoleLine, _searchField);
+			if (GUILayout.Button("Run", _btnOn, GUILayout.Width(Theme.RunButtonWidth))) SubmitConsole();
 			GUILayout.EndHorizontal();
 			GUILayout.Label("help [text] · wait / waitfor for scripts · Tab completes · Up/Down history", _small);
 			var tokens = DevRegistry.Tokenize(_consoleLine);
@@ -696,8 +946,8 @@ namespace DreamTech.DevTools.Unity
 			else if (head.Length > 0)
 			{
 				GUILayout.BeginHorizontal();
-				foreach (string s in _reg.Complete(head).Take(4))
-					if (GUILayout.Button(s, _btn, GUILayout.ExpandWidth(false))) _consoleLine = s + " ";
+				foreach (string s in _reg.Complete(head).Take(3))
+					if (GUILayout.Button(s, _btn, GUILayout.MinWidth(Theme.MinimumFlexWidth / 2f))) _consoleLine = s + " ";
 				GUILayout.EndHorizontal();
 			}
 			DrawLog();
@@ -737,7 +987,8 @@ namespace DreamTech.DevTools.Unity
 
 		// ---- scrolling that also works by dragging with a finger -----------------------------------------------------
 
-		Vector2 BeginDragScroll(Vector2 scroll) => GUILayout.BeginScrollView(scroll, false, false);
+		/// <summary>Vertical-only scroll view: the horizontal scrollbar is hidden, rows are built to fit the width.</summary>
+		Vector2 BeginDragScroll(Vector2 scroll) => GUILayout.BeginScrollView(scroll, false, false, GUIStyle.none, GUI.skin.verticalScrollbar);
 
 		/// <summary>Horizontal drag + mouse wheel for the tab strip; call right after its EndScrollView.</summary>
 		Vector2 DragTabStrip(Vector2 scroll)
@@ -844,7 +1095,9 @@ namespace DreamTech.DevTools.Unity
 		{
 			GUI.FocusControl(null);
 			if (args.Length == 0 && c.Params.Length > 0) args = Values(c);
-			_reg.Execute(c, args);
+			_commandBeingRun = c; // OnExecuted (synchronous) uses it to flash this row
+			try { _reg.Execute(c, args); }
+			finally { _commandBeingRun = null; }
 		}
 
 		// ---- styles --------------------------------------------------------------------------------------------------
@@ -858,52 +1111,84 @@ namespace DreamTech.DevTools.Unity
 			return t;
 		}
 
+		/// <summary>3x3 texture with a one-pixel border; use with <c>border = RectOffset(1,1,1,1)</c> so it stretches without blurring the edge.</summary>
+		Texture2D BorderedTex(Color fill, Color border)
+		{
+			var t = new Texture2D(3, 3, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave, filterMode = FilterMode.Point };
+			for (int y = 0; y < 3; y++)
+				for (int x = 0; x < 3; x++)
+					t.SetPixel(x, y, x == 1 && y == 1 ? fill : border);
+			t.Apply();
+			_textures.Add(t);
+			return t;
+		}
+
 		void BuildStyles(int key)
 		{
 			foreach (var t in _textures) if (t != null) Destroy(t);
 			_textures.Clear();
 			_stylesFor = key;
-			var bg = Tex(new Color(0.08f, 0.09f, 0.11f, _alpha));
-			var btn = Tex(new Color(0.22f, 0.24f, 0.28f, 1f));
-			var hover = Tex(new Color(0.30f, 0.33f, 0.38f, 1f));
-			var on = Tex(new Color(0.16f, 0.52f, 0.30f, 1f));
-			var off = Tex(new Color(0.55f, 0.20f, 0.20f, 1f));
-			var tab = Tex(new Color(0.16f, 0.17f, 0.20f, 1f));
-			var tabOn = Tex(new Color(0.20f, 0.42f, 0.75f, 1f));
-			var field = Tex(new Color(0.03f, 0.03f, 0.04f, 1f));
-			var pill = Tex(new Color(0.08f, 0.09f, 0.11f, 0.8f));
-			var pillErr = Tex(new Color(0.45f, 0.08f, 0.08f, 0.9f));
+			var panelColor = Theme.PanelBackground;
+			panelColor.a = Mathf.Max(_alpha, Theme.MinimumPanelAlpha);
+			var bg = BorderedTex(panelColor, Theme.PanelBorder);
+			var btn = Tex(Theme.ButtonNormal);
+			var hover = Tex(Theme.ButtonHover);
+			var on = Tex(Theme.Positive);
+			var off = Tex(Theme.Negative);
+			var tab = Tex(Theme.TabNormal);
+			var tabOn = Tex(Theme.TabSelected);
+			var accent = Tex(Theme.Accent);
+			var field = BorderedTex(Theme.FieldBackground, Theme.FieldBorder);
+			var pill = Tex(Theme.PillBackground);
+			var pillErr = Tex(Theme.PillErrorBackground);
+			_accentTexture = accent;
+			_dividerTexture = Tex(Theme.Divider);
 
-			_box = new GUIStyle { normal = { background = bg } };
-			_btn = Button(btn, hover, tabOn);
-			_btnOn = Button(on, on, tabOn);
-			_btnOff = Button(off, off, tabOn);
-			_tabBtn = Button(tab, hover, tabOn);
-			_tabBtnOn = Button(tabOn, tabOn, tabOn);
+			_box = new GUIStyle { normal = { background = bg }, border = new RectOffset(1, 1, 1, 1) };
+			_btn = Button(btn, hover, accent, Theme.ButtonHeight);
+			_btnSmall = Button(btn, hover, accent, Theme.TouchTarget);
+			_btnSmall.padding = new RectOffset(2, 2, 4, 4);
+			_btnOn = Button(on, on, accent, Theme.ButtonHeight);
+			_btnOff = Button(off, off, accent, Theme.ButtonHeight);
+			_tabBtn = Button(tab, hover, accent, Theme.TabHeight);
+			_tabBtnOn = Button(tabOn, tabOn, accent, Theme.TabHeight);
 			foreach (var s in new[] { _tabBtn, _tabBtnOn })
 			{
-				s.fixedHeight = 30;
 				s.stretchWidth = false;
-				s.padding = new RectOffset(10, 10, 4, 4);
+				s.padding = new RectOffset(12, 12, 4, 4);
 			}
-			_label = new GUIStyle(GUI.skin.label) { fontSize = 14, wordWrap = true, normal = { textColor = new Color(0.92f, 0.93f, 0.95f) } };
-			_small = new GUIStyle(_label) { fontSize = 12, normal = { textColor = new Color(0.62f, 0.66f, 0.72f) } };
-			_title = new GUIStyle(_label) { fontSize = 16, fontStyle = FontStyle.Bold, wordWrap = false };
-			_catHeader = new GUIStyle(_label) { fontSize = 13, fontStyle = FontStyle.Bold, margin = new RectOffset(4, 4, 8, 2), normal = { textColor = new Color(0.55f, 0.75f, 1f) } };
-			_okText = new GUIStyle(_label) { normal = { textColor = new Color(0.55f, 0.92f, 0.6f) } };
-			_errText = new GUIStyle(_label) { normal = { textColor = new Color(1f, 0.55f, 0.5f) } };
-			_field = new GUIStyle(GUI.skin.textField) { fontSize = 14, fixedHeight = 30, alignment = TextAnchor.MiddleLeft, padding = new RectOffset(6, 6, 4, 4) };
+			_tabBtnOn.fontStyle = FontStyle.Bold;
+			_label = new GUIStyle(GUI.skin.label) { fontSize = Theme.FontBody, wordWrap = true, normal = { textColor = Theme.TextPrimary } };
+			_small = new GUIStyle(_label) { fontSize = Theme.FontSmall, normal = { textColor = Theme.TextSecondary } };
+			_title = new GUIStyle(_label) { fontSize = Theme.FontTitle, fontStyle = FontStyle.Bold, wordWrap = false };
+			_catHeader = new GUIStyle(_label)
+			{
+				fontSize = Theme.FontCategory, fontStyle = FontStyle.Bold, margin = new RectOffset(4, 4, 12, 4),
+				padding = new RectOffset(2, 2, 0, 4), normal = { textColor = Theme.TextCategory },
+			};
+			_okText = new GUIStyle(_label) { normal = { textColor = Theme.TextSuccess } };
+			_errText = new GUIStyle(_label) { normal = { textColor = Theme.TextError } };
+			_toastText = new GUIStyle(_label) { wordWrap = false, clipping = TextClipping.Clip, normal = { textColor = Theme.TextError } };
+			_toastOkText = new GUIStyle(_toastText) { normal = { textColor = Theme.TextSuccess } };
+			_commandLabel = new GUIStyle(_label) { wordWrap = false, clipping = TextClipping.Clip, alignment = TextAnchor.MiddleLeft };
+			_blockedLabel = new GUIStyle(_commandLabel) { normal = { textColor = Theme.TextDisabled } };
+			_blockedReason = new GUIStyle(_small) { wordWrap = false, clipping = TextClipping.Clip, alignment = TextAnchor.MiddleRight, normal = { textColor = Theme.TextDisabled } };
+			_field = new GUIStyle(GUI.skin.textField) { fontSize = Theme.FontBody, fixedHeight = Theme.FieldHeight, alignment = TextAnchor.MiddleLeft, padding = new RectOffset(8, 8, 4, 4), border = new RectOffset(1, 1, 1, 1), margin = new RectOffset(2, 2, 2, 2) };
 			_field.normal.background = _field.focused.background = _field.hover.background = _field.active.background = field;
 			_field.normal.textColor = _field.focused.textColor = _field.hover.textColor = Color.white;
-			_pillStyle = new GUIStyle(_label) { fontSize = 13, wordWrap = false, padding = new RectOffset(10, 10, 6, 6), normal = { background = pill, textColor = new Color(1f, 0.85f, 0.3f) } };
+			_searchField = new GUIStyle(_field);
+			_placeholder = new GUIStyle(_field) { fontStyle = FontStyle.Italic };
+			_placeholder.normal.background = _placeholder.focused.background = _placeholder.hover.background = _placeholder.active.background = null;
+			_placeholder.normal.textColor = Theme.TextDisabled;
+			_pillStyle = new GUIStyle(_label) { fontSize = Theme.FontCategory, wordWrap = false, padding = new RectOffset(10, 10, 6, 6), normal = { background = pill, textColor = Theme.TextPill } };
 			_pillErr = new GUIStyle(_pillStyle) { normal = { background = pillErr, textColor = Color.white } };
 		}
 
-		GUIStyle Button(Texture2D bg, Texture2D hover, Texture2D active)
+		GUIStyle Button(Texture2D bg, Texture2D hover, Texture2D active, float height)
 		{
 			var s = new GUIStyle(GUI.skin.button)
 			{
-				fontSize = 14, fixedHeight = 32, alignment = TextAnchor.MiddleCenter, wordWrap = false,
+				fontSize = Theme.FontBody, fixedHeight = height, alignment = TextAnchor.MiddleCenter, wordWrap = false,
 				margin = new RectOffset(2, 2, 2, 2), padding = new RectOffset(6, 6, 4, 4),
 			};
 			s.normal.background = bg;

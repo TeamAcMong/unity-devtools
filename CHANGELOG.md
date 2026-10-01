@@ -2,6 +2,23 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), phiên bản theo [SemVer](https://semver.org/).
 
+## [0.2.0] - 2026-10-01
+
+### Changed
+- HUD: giao diện được dọn lại, mọi màu / cỡ / thời gian gom vào một lớp `Theme` trong `DevToolsHud`.
+- Dòng lệnh có tham số tách hai dòng (sao + tên + nút Run cố định, bên dưới là ô tham số chia đều bề rộng): không còn tràn ngang, nút Run luôn thấy đủ; vùng cuộn dọc không còn thanh cuộn ngang.
+- Lệnh bị chặn hiện gọn một dòng (tên mờ + lý do), không còn nút xám lớn kèm dòng phụ.
+- Nền panel đậm hơn và không bao giờ trong hơn 0.9 (mặc định 0.97) để chữ của game không lọt qua; viền mảnh quanh panel và ô nhập.
+- Thông báo kết quả rút gọn đường dẫn file thành tên file và giới hạn độ dài, một dòng; nội dung đầy đủ vẫn ở tab Log.
+- Nút nhỏ (sao, +, -, v/M/X, ×) rộng 44 đơn vị cho thao tác chạm; tiêu đề nhóm có đường kẻ và khoảng cách.
+- Tab Quick / nhóm lệnh dùng danh sách dựng một lần mỗi frame thay vì LINQ trong OnGUI.
+
+### Added
+- Tab đang chọn có thanh nhấn màu bên dưới; thanh tab tự cuộn để lộ tab đang chọn khi mở panel hoặc đổi tab qua API (`ShowTab`).
+- Ô Search có viền, chữ gợi ý và nút xóa (×); ô lọc trong bộ chọn giá trị dùng cùng kiểu.
+- Dòng lệnh nháy xanh / đỏ (mờ dần 0.6 giây, thời gian không scale) sau khi chạy từ HUD.
+- `tools/player-smoke.py --resolution WxH` để chụp smoke ở dọc / ngang.
+
 ## [0.1.2] - 2026-10-01
 
 ### Fixed
