@@ -12,7 +12,7 @@
             <ui:ScrollView name="dt-tabs" class="dt-tabs" mode="Horizontal" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" touch-scroll-type="Clamped" />
             <ui:VisualElement name="dt-search-slot" class="dt-slot" />
             <ui:VisualElement name="dt-body-wrap" class="dt-body-wrap">
-                <ui:ScrollView name="dt-body" class="dt-body" mode="Vertical" horizontal-scroller-visibility="Hidden" touch-scroll-type="Elastic" />
+                <ui:ScrollView name="dt-body" class="dt-body" mode="Vertical" horizontal-scroller-visibility="Hidden" touch-scroll-type="Clamped" />
             </ui:VisualElement>
             <ui:Label name="dt-toast" class="dt-toast" />
         </ui:VisualElement>

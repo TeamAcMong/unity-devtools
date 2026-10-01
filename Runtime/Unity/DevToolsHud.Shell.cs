@@ -87,6 +87,11 @@ namespace DreamTech.DevTools.Unity
 			_body = _root.Q<ScrollView>("dt-body");
 			_toast = _root.Q<Label>("dt-toast");
 			_pillText = _root.Q<Label>("dt-pill-text");
+			// the built-in ScrollView drag only handles pointers typed as touch, and a pressed child button swallows the drag
+			_tabs.touchScrollBehavior = ScrollView.TouchScrollBehavior.Clamped;
+			_body.touchScrollBehavior = ScrollView.TouchScrollBehavior.Clamped;
+			_tabs.AddManipulator(new DragScrollManipulator(true));
+			_body.AddManipulator(new DragScrollManipulator(false));
 
 			_title.text = string.IsNullOrEmpty(_settings.Title) ? "DevTools" : _settings.Title;
 			BuildHeader();
