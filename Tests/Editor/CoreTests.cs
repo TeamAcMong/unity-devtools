@@ -290,6 +290,18 @@ namespace DreamTech.DevTools.Tests
 		}
 
 		[Test]
+		public void TickSurvivesAScriptThatCancelsAllScripts()
+		{
+			DevTools.Reset();
+			DevTools.Registry.RegisterModules(new[] { typeof(DevTools).Assembly });
+			DevTools.RunScript("tools.cancel-scripts");
+			DevTools.RunScript("tools.cancel-scripts; tools.cancel-scripts");
+			Assert.DoesNotThrow(() => { for (int i = 0; i < 4; i++) DevTools.Tick(); });
+			Assert.AreEqual(0, DevTools.RunningScripts.Count);
+			DevTools.Reset();
+		}
+
+		[Test]
 		public void CommandsRunOnePerTick()
 		{
 			var s = new DevScriptRun(_r, "t.inc; t.inc\n# comment\nt.inc");
@@ -413,10 +425,31 @@ namespace DreamTech.DevTools.Tests
 	public sealed class ClockAndAdsTests
 	{
 		[SetUp]
-		public void SetUp() => DevTools.Reset();
+		public void SetUp()
+		{
+			DevTools.Reset();
+			DevTools.Activate();
+		}
 
 		[TearDown]
 		public void TearDown() => DevTools.Reset();
+
+		[Test]
+		public void Inactive_ClockAndAdOverridesAreNoOps()
+		{
+			DevTools.Reset(); // IsActive = false, like a release build
+			int changes = 0;
+			DevClock.OffsetChanged += () => changes++;
+			DevClock.SetOffset(TimeSpan.FromDays(5));
+			Assert.AreEqual(0, changes);
+			Assert.AreEqual(TimeSpan.Zero, DevClock.Offset);
+			DevClock.RestoreOffset(TimeSpan.FromDays(5)); // even a restored offset must not shift Now
+			Assert.That((DevClock.Now - DateTime.Now).TotalSeconds, Is.InRange(-5, 5));
+			Assert.That((DevClock.UtcNow - DateTime.UtcNow).TotalSeconds, Is.InRange(-5, 5));
+			DevAdOutcome.Set(DevAdKind.Rewarded, DevAdMode.ForceSuccess);
+			Assert.AreEqual(DevAdMode.Normal, DevAdOutcome.Get(DevAdKind.Rewarded));
+			Assert.IsFalse(DevAdOutcome.TryIntercept(DevAdKind.Rewarded, out _));
+		}
 
 		[Test]
 		public void OffsetShiftsNowAndRaisesTheEvent()

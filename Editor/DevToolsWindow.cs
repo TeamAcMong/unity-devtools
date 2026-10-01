@@ -475,7 +475,9 @@ namespace DreamTech.DevTools.Editor
 
 		static readonly NamedBuildTarget[] Targets = { NamedBuildTarget.Standalone, NamedBuildTarget.Android, NamedBuildTarget.iOS };
 
-		public static bool HasDefine() => PlayerSettings.GetScriptingDefineSymbols(NamedBuildTarget.Standalone).Split(';').Contains(Define);
+		public static bool HasDefine() => HasDefine(NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)));
+
+		public static bool HasDefine(NamedBuildTarget target) => PlayerSettings.GetScriptingDefineSymbols(target).Split(';').Contains(Define);
 
 		public static void SetDefine(bool on)
 		{

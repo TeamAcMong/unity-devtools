@@ -1,0 +1,5 @@
+<linker>
+  <!-- Keeps the dev tools' own types ([DevModule] modules are found by reflection) when IL2CPP strips managed code. -->
+  <assembly fullname="DreamTech.DevTools" preserve="all"/>
+  <assembly fullname="DreamTech.DevTools.Unity" preserve="all"/>
+</linker>

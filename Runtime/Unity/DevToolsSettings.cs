@@ -58,6 +58,10 @@ namespace DreamTech.DevTools.Unity
 		[Tooltip("Folders under persistentDataPath the wipe keeps (relative names).")]
 		public List<string> WipeKeepFolders = new List<string> { "DevShots" };
 
+		[Header("Release safety")]
+		[Tooltip("Fail non-development builds that compile the dev tools in through DREAMTECH_DEVTOOLS (otherwise only a warning is logged).")]
+		public bool failReleaseBuildWithDefine;
+
 		[Header("Editor")]
 		[Tooltip("Scene the editor window's Play buttons open first (empty = the open scene).")]
 		public string LaunchScene = "";

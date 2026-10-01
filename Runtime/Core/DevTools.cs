@@ -116,15 +116,11 @@ namespace DreamTech.DevTools
 		{
 			if (_scripts.Count == 0) return;
 			double now = Registry.Now;
-			for (int i = 0; i < _scripts.Count; i++)
-			{
-				var s = _scripts[i];
+			// Snapshot: a step may start or cancel scripts (tools.cancel-scripts clears the list) while we iterate.
+			var snapshot = _scripts.ToArray();
+			foreach (var s in snapshot)
 				if (s.Finished || s.Tick(now))
-				{
-					_scripts.RemoveAt(i);
-					i--;
-				}
-			}
+					_scripts.Remove(s);
 		}
 	}
 }

@@ -10,7 +10,7 @@ namespace DreamTech.DevTools
 	/// <summary>
 	/// A group of commands, watches, conditions and presets. Mark a class with <see cref="DevModuleAttribute"/> (and give it
 	/// a parameterless constructor) to have it registered at startup, or install an instance yourself with
-	/// <see cref="DevTools.Install(IDevModule)"/> when it needs references from the game.
+	/// <see cref="DevTools.Install(object)"/> when it needs references from the game.
 	/// </summary>
 	public interface IDevModule
 	{
