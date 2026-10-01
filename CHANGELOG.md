@@ -22,6 +22,7 @@
 - `tools/player-smoke.py` chụp thêm tab Engine / Watch / Console và viên DEV.
 
 ### Fixed
+- HUD: kéo để cuộn thanh tab và danh sách bằng mọi loại con trỏ (cảm ứng, chuột, bút) qua `DragScrollManipulator`; trước đây nút đang bấm giữ capture nên kéo bắt đầu trên tab / Run không cuộn được. Kéo không kích hoạt nút bên dưới, chạm vẫn hoạt động; có quán tính theo thời gian không scale.
 - Test `DevTools.UI` chạy được ở batch mode có GPU (`--graphics`).
 
 ## [0.2.0] - 2026-10-01
