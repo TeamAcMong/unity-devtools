@@ -1,0 +1,23 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="dt-root" class="dt-root" picking-mode="Ignore">
+        <ui:VisualElement name="dt-panel" class="dt-panel">
+            <ui:VisualElement name="dt-header" class="dt-header">
+                <ui:Label name="dt-title" class="dt-title" text="DevTools" />
+                <ui:Label name="dt-stats" class="dt-chip" text="60 fps" />
+                <ui:VisualElement class="dt-spacer" />
+                <ui:Button name="dt-dock" class="dt-btn dt-btn--icon" tooltip="Dock the panel to the top / bottom" />
+                <ui:Button name="dt-size" class="dt-btn dt-btn--icon" tooltip="Panel height: S / M / L" />
+                <ui:Button name="dt-close" class="dt-btn dt-btn--icon" tooltip="Close (the DEV pill stays)" />
+            </ui:VisualElement>
+            <ui:ScrollView name="dt-tabs" class="dt-tabs" mode="Horizontal" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" touch-scroll-type="Clamped" />
+            <ui:VisualElement name="dt-search-slot" class="dt-slot" />
+            <ui:VisualElement name="dt-body-wrap" class="dt-body-wrap">
+                <ui:ScrollView name="dt-body" class="dt-body" mode="Vertical" horizontal-scroller-visibility="Hidden" touch-scroll-type="Elastic" />
+            </ui:VisualElement>
+            <ui:Label name="dt-toast" class="dt-toast" />
+        </ui:VisualElement>
+        <ui:VisualElement name="dt-pill" class="dt-pill">
+            <ui:Label name="dt-pill-text" class="dt-pill__text" text="DEV 60" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

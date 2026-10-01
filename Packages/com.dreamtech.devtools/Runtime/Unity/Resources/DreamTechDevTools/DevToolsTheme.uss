@@ -1,0 +1,52 @@
+/* DreamTech DevTools - the single theme file: every color, size, radius and font size of the HUD is a variable here.
+   The second selector exists because dropdown popups are added to the panel root, outside the HUD tree. */
+:root,
+.unity-base-dropdown {
+    /* surfaces */
+    --dt-bg: rgb(15, 17, 24);
+    --dt-surface: rgb(25, 28, 39);
+    --dt-surface-2: rgb(35, 39, 54);
+    --dt-surface-3: rgb(48, 53, 73);
+    --dt-field: rgb(11, 13, 19);
+    --dt-border: rgb(46, 52, 72);
+    --dt-border-strong: rgb(72, 80, 108);
+    --dt-scrim: rgba(0, 0, 0, 0.35);
+
+    /* accent (primary actions, selected tab, switches) */
+    --dt-accent: rgb(76, 139, 255);
+    --dt-accent-hover: rgb(104, 160, 255);
+    --dt-accent-press: rgb(50, 108, 224);
+    --dt-accent-soft: rgba(76, 139, 255, 0.16);
+    --dt-on-accent: rgb(255, 255, 255);
+
+    /* status */
+    --dt-positive: rgb(52, 199, 123);
+    --dt-positive-soft: rgba(52, 199, 123, 0.16);
+    --dt-positive-solid: rgb(17, 52, 37);
+    --dt-danger: rgb(255, 92, 98);
+    --dt-danger-hover: rgb(255, 122, 126);
+    --dt-danger-soft: rgba(255, 92, 98, 0.16);
+    --dt-danger-solid: rgb(68, 26, 31);
+    --dt-warning: rgb(255, 196, 64);
+
+    /* text */
+    --dt-text: rgb(236, 239, 247);
+    --dt-text-2: rgb(160, 168, 190);
+    --dt-text-3: rgb(108, 117, 142);
+
+    /* geometry (logical pixels, before the HUD scale) */
+    --dt-radius-panel: 16px;
+    --dt-radius-card: 12px;
+    --dt-radius-control: 10px;
+    --dt-radius-pill: 22px;
+    --dt-touch: 44px;
+    --dt-gap: 8px;
+    --dt-pad: 12px;
+
+    /* type */
+    --dt-font-title: 19px;
+    --dt-font-label: 15px;
+    --dt-font-body: 14px;
+    --dt-font-small: 12px;
+    --dt-font-caption: 11px;
+}

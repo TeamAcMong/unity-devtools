@@ -3,7 +3,7 @@
 Bộ công cụ play-test lắp ráp kiểu Lego cho game Unity. Mọi thứ đi qua **một registry lệnh** duy nhất, dùng chung cho các
 giao diện:
 
-- **HUD trong game** (IMGUI): chạy trên điện thoại, trên bản build và trong Editor. Có viên **DEV**, tab theo nhóm, sao,
+- **HUD trong game** (UI Toolkit, giao diện tối kiểu app): chạy trên điện thoại, trên bản build và trong Editor. Có viên **DEV**, tab theo nhóm, sao,
   console, log. Chặn tap lọt xuống game.
 - **Cửa sổ Editor** (`Tools > DreamTech > DevTools`, Ctrl+Alt+D):
   - Khi Play: chạy lệnh và xem giá trị sống.
@@ -191,11 +191,12 @@ khi phát hành.**
 
 ## Giới hạn
 
-- **HUD:** dùng IMGUI (không cần asset, chạy mọi nơi). Trong **Editor chạy batch mode**, Unity không gọi `OnGUI`, nên HUD
-  được kiểm bằng smoke test trên player (`tools/player-smoke.py` của repo).
+- **HUD:** dùng UI Toolkit, tự mang UXML / USS / PanelSettings trong package (không cần asset trong project). Cần
+  `com.unity.modules.uielements`. Tap tới HUD qua EventSystem của game như mọi UI Toolkit runtime (project chỉ bật Input System cần `InputSystemUIInputModule`). HUD được kiểm bằng
+  `unity-run.py test playmode --graphics` và smoke test trên player (`tools/player-smoke.py` của repo).
 - **Chặn tap:** HUD chặn được uGUI và những game hỏi `EventSystem.IsPointerOverGameObject`. Game đọc input thô thì gọi
   `DevToolsHud.IsPointerOverHud(screenPos)`.
 - **Inspector:** chỉ ghi được số, bool, chuỗi và enum. Không ghi được member của struct lồng trong một struct khác.
-- **Phím tắt:** đọc từ sự kiện IMGUI nên chạy với cả Input Manager lẫn Input System. Cú chạm nhiều ngón dùng Input System
+- **Phím tắt:** đọc từ sự kiện IMGUI (`OnGUI` chỉ còn làm việc này) nên chạy với cả Input Manager lẫn Input System. Cú chạm nhiều ngón dùng Input System
   khi Input Manager bị tắt.
 - **Phiên bản đã kiểm:** Unity 2022.3.62f2 và 6000.5.7f1. Các bản 6000.0–6000.4 chưa kiểm.

@@ -30,7 +30,11 @@ SCRIPT = [
     'demo.start-level', 'level.lose', 'waitfor revive-offer 5', 'ads.rewarded-outcome ForceFail', 'demo.revive-with-ad',
     'ads.rewarded-outcome Normal',
     'hud.show-panel log', 'wait 0.5', 'engine.screenshot true',
-    'hud.close-panel', 'wait 0.3', 'engine.screenshot false',
+    'hud.show-panel engine', 'wait 0.5', 'engine.screenshot true',
+    'hud.show-panel watch', 'wait 0.5', 'engine.screenshot true',
+    'hud.show-panel console', 'wait 0.5', 'engine.screenshot true',
+    'hud.close-panel', 'wait 0.4', 'engine.screenshot true',      # the DEV pill
+    'engine.screenshot false',
     'wait 1', 'engine.quit',
 ]
 EXPECTED_FAIL = {'level.win': 1}  # the second level.win

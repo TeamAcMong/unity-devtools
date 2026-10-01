@@ -79,7 +79,7 @@ namespace DreamTech.DevTools.Tests
 	}
 
 	/// <summary>
-	/// Needs IMGUI: batch-mode editors never call OnGUI in play mode, so this runs from the Test Runner window; the batch
+	/// Needs a real UI Toolkit panel, so it needs a graphics device (unity-run.py ... --graphics, or the Test Runner window); the batch
 	/// check of the HUD is the player smoke test (tools/player-smoke.py on a development build of the demo).
 	/// </summary>
 	[Category("DevTools.UI")]
@@ -88,7 +88,7 @@ namespace DreamTech.DevTools.Tests
 		[UnityTest]
 		public IEnumerator OpenPanelBlocksUiRaycastsUnderIt()
 		{
-			if (Application.isBatchMode) Assert.Ignore("IMGUI does not run in batch mode");
+			if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null) Assert.Ignore("the HUD panel needs a graphics device: run tools/unity-run.py test playmode --graphics");
 			DevToolsHost.Ensure();
 			var es = EventSystem.current != null ? null : new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
 			Assert.IsTrue(DevToolsHud.ShowTab("quick"));
@@ -97,13 +97,13 @@ namespace DreamTech.DevTools.Tests
 			Assert.IsTrue(DevToolsHud.IsPointerOverHud(point));
 			var hits = new List<RaycastResult>();
 			EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = point }, hits);
-			Assert.IsTrue(hits.Count > 0 && hits[0].gameObject.transform.parent.name == "[DevTools Blocker]", "topmost hit: " + (hits.Count > 0 ? hits[0].gameObject.name : "none"));
+			Assert.IsTrue(hits.Count > 0 && !(hits[0].module is UnityEngine.UI.GraphicRaycaster), "topmost hit must be the HUD panel, got: " + (hits.Count > 0 ? hits[0].gameObject.name + " via " + hits[0].module : "none"));
 			DevToolsHud.Open(false);
 			yield return null;
 			yield return null;
 			hits.Clear();
 			EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = point }, hits);
-			Assert.IsFalse(hits.Any(h => h.gameObject.name == "panel"));
+			Assert.IsFalse(hits.Any(h => !(h.module is UnityEngine.UI.GraphicRaycaster)), "closed panel must not take the tap");
 			if (es != null) Object.Destroy(es);
 		}
 	}

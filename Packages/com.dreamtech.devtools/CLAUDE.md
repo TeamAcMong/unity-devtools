@@ -55,8 +55,15 @@ Phụ thuộc một chiều: `DreamTech.DevTools` (core) ← `DreamTech.DevTools
 - **Trùng id → đăng ký sau thắng.** Cài lại cùng adapter → gỡ cái cũ trước. `Remove(owner)` gỡ lệnh, watch, điều kiện,
   root, preset và các category đã rỗng.
 - **HUD không được để tap lọt xuống game.**
-  - Blocker là `Image` trong suốt, đặt trên canvas overlay có sortingOrder 32767.
-  - Blocker phải có `cullTransparentMesh = false`. Mesh trong suốt bị cull thì không có depth, và GraphicRaycaster bỏ qua.
+  - HUD là một panel UI Toolkit có `sortingOrder` 32000, nằm trên mọi canvas của game. Panel tham gia raycast của
+    EventSystem (PanelRaycaster) nên tap trên HUD không tới nút uGUI bên dưới, và `IsPointerOverGameObject` đúng trên HUD.
+    Không có blocker uGUI riêng nữa. Vùng root của HUD phải `picking-mode: Ignore` để chỗ trống không chặn tap.
+  - UXML / USS / theme / PanelSettings nằm trong `Runtime/Unity/Resources/DreamTechDevTools` (Resources trong package chỉ đọc
+    vẫn vào player build). **PanelSettings phải là asset**, không `CreateInstance` lúc chạy: Unity 6 chỉ gán dữ liệu ICU của
+    text engine cho PanelSettings asset, nếu không mọi Label ném NullReferenceException khi đo. Sửa asset bằng
+    `python tools/unity-run.py method DreamTech.DevTools.Editor.HudAssetBuilder.Build`.
+  - Mọi màu / cỡ / bo góc nằm ở biến USS trong `DevToolsTheme.uss`; `DevToolsHud.uss` chỉ chứa bố cục. Icon vẽ bằng
+    Painter2D (`DevIcon`), không dùng ký tự: font runtime mặc định không có ★ ▾.
   - Phím tắt đọc từ sự kiện IMGUI, không đọc từ `Input`, để chạy được cả khi project chỉ bật Input System.
 - **Xoá save** chạy ở `AfterAssembliesLoaded`, trước khi game nạp bất cứ gì. Key của DevTools
   (`DevToolsKeys.All`) và key trong settings được giữ lại. `DevClock.RestoreOffset` được đặt về 0 sau khi xoá.

@@ -34,8 +34,9 @@ cứ gì trong package.**
 - **Compile trước khi mở Unity:** `python tools/compile-check.py`. Script này dùng Roslyn C# 9 với DLL của 2022.3 và
   6000.5. Phần core chỉ có netstandard; runtime biên dịch cả bản dev lẫn bản release; bản 6000 coi CS0618 / CS0619 là lỗi.
   `UnityEngine.UI.dll` lấy từ `Library/` của dev project (6000) và của project tạm (2022).
-- **Test HUD cần player thật:** Editor batch mode không gọi `OnGUI` trong play mode. Test category `DevTools.UI` tự bỏ
-  qua khi ở batch; HUD được kiểm bằng `tools/player-smoke.py` (xem ảnh chụp trong `tools/.cache/smoke`).
+- **Test HUD cần GPU:** panel UI Toolkit chỉ dựng khi có thiết bị đồ họa. Test category `DevTools.UI` tự bỏ qua khi
+  `-nographics`; chạy `python tools/unity-run.py test playmode --graphics --category DevTools.UI`. Ảnh chụp thật: dựng
+  player rồi `tools/player-smoke.py` (xem `tools/.cache/smoke`).
 
 ## Ma trận test trước khi phát hành
 
