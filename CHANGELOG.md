@@ -2,6 +2,11 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), phiên bản theo [SemVer](https://semver.org/).
 
+## [0.1.2] - 2026-10-01
+
+### Fixed
+- HUD: thanh tab cuộn ngang được (kéo bằng ngón tay / chuột, lăn chuột, nút ‹ ›). Trước đây tab vượt mép phải bị ẩn hẳn khi có nhiều category.
+
 ## [0.1.1] - 2026-10-01
 
 ### Fixed

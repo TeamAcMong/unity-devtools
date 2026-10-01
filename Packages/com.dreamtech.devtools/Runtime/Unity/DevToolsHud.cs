@@ -32,7 +32,11 @@ namespace DreamTech.DevTools.Unity
 		bool _open, _hidden;
 		string _tab = TabQuick;
 		string _search = "";
-		Vector2 _scroll, _tabScroll, _logScroll, _pickScroll;
+		Vector2 _scroll, _logScroll, _pickScroll;
+		Vector2 _tabScroll;
+		Rect _tabStripRect;
+		bool _tabDragArmed, _tabDragging;
+		float _tabDragStartX, _tabDragScrollStartX;
 		int _size = 1;
 		bool _dockBottom;
 		float _userScale = 1f, _alpha = 0.92f;
@@ -404,6 +408,9 @@ namespace DreamTech.DevTools.Unity
 
 			var tabs = Tabs();
 			if (!tabs.Contains(_tab)) _tab = TabQuick;
+			// One-row tab strip that scrolls sideways: finger/mouse drag, mouse wheel, or the ‹ › buttons.
+			GUILayout.BeginHorizontal();
+			if (GUILayout.Button("‹", _tabBtn, GUILayout.Width(28))) _tabScroll.x = Mathf.Max(0, _tabScroll.x - _tabStripRect.width * 0.6f);
 			_tabScroll = GUILayout.BeginScrollView(_tabScroll, false, false, GUIStyle.none, GUIStyle.none, GUILayout.Height(_tabBtn.fixedHeight + 6));
 			GUILayout.BeginHorizontal();
 			foreach (string t in tabs)
@@ -416,6 +423,9 @@ namespace DreamTech.DevTools.Unity
 				}
 			GUILayout.EndHorizontal();
 			GUILayout.EndScrollView();
+			_tabScroll = DragTabStrip(_tabScroll);
+			if (GUILayout.Button("›", _tabBtn, GUILayout.Width(28))) _tabScroll.x += _tabStripRect.width * 0.6f;
+			GUILayout.EndHorizontal();
 
 			if (_pickCmd != null) DrawPicker();
 			else if (_tab == TabConsole) DrawConsole();
@@ -728,6 +738,54 @@ namespace DreamTech.DevTools.Unity
 		// ---- scrolling that also works by dragging with a finger -----------------------------------------------------
 
 		Vector2 BeginDragScroll(Vector2 scroll) => GUILayout.BeginScrollView(scroll, false, false);
+
+		/// <summary>Horizontal drag + mouse wheel for the tab strip; call right after its EndScrollView.</summary>
+		Vector2 DragTabStrip(Vector2 scroll)
+		{
+			var e = Event.current;
+			if (e.type == EventType.Repaint) _tabStripRect = GUILayoutUtility.GetLastRect();
+			switch (e.type)
+			{
+				case EventType.ScrollWheel:
+					if (_tabStripRect.Contains(e.mousePosition))
+					{
+						scroll.x = Mathf.Max(0, scroll.x + (Mathf.Abs(e.delta.x) > Mathf.Abs(e.delta.y) ? e.delta.x : e.delta.y) * 20f);
+						e.Use();
+					}
+					break;
+				case EventType.MouseDown:
+					if (_tabStripRect.Contains(e.mousePosition))
+					{
+						_tabDragArmed = true;
+						_tabDragging = false;
+						_tabDragStartX = e.mousePosition.x;
+						_tabDragScrollStartX = scroll.x;
+					}
+					break;
+				case EventType.MouseDrag:
+					if (_tabDragArmed)
+					{
+						float dx = e.mousePosition.x - _tabDragStartX;
+						if (!_tabDragging && Mathf.Abs(dx) > 8f)
+						{
+							_tabDragging = true;
+							GUIUtility.hotControl = 0; // cancels the tab under the finger
+						}
+						if (_tabDragging)
+						{
+							scroll.x = Mathf.Max(0, _tabDragScrollStartX - dx);
+							e.Use();
+						}
+					}
+					break;
+				case EventType.MouseUp:
+					if (_tabDragging) e.Use();
+					_tabDragArmed = false;
+					_tabDragging = false;
+					break;
+			}
+			return scroll;
+		}
 
 		Vector2 EndDragScroll(Vector2 scroll)
 		{
