@@ -2,6 +2,28 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), phiên bản theo [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- HUD viết lại bằng UI Toolkit (UXML + USS + PanelSettings nằm trong `Runtime/Unity/Resources/DreamTechDevTools`), giao diện tối
+  kiểu app điện thoại: header có tiêu đề + chip fps/lỗi + nút dock / cỡ (S, M, L) / đóng; thanh tab dạng viên, cuộn ngang bằng
+  ngón tay; ô tìm kiếm có icon + nút xóa; mỗi lệnh là một thẻ (tên + gợi ý, sao nhỏ trong thẻ, nút Run màu nhấn).
+- Tham số là control thật: `LongField` / `DoubleField` có nút - / +, `DropdownField` cho Choice và Enum, công tắc cho Bool,
+  `TextField`. Lệnh bị chặn mờ đi kèm chip lý do; lệnh Confirm hiện khung xác nhận ngay trong thẻ (5 giây). Toggle là công tắc.
+- Watch là bảng key / value gọn theo nhóm; kết quả lệnh nháy xanh / đỏ quanh thẻ (thời gian không scale) và toast nổi ở đáy panel.
+- Viên DEV là viên thuốc bo tròn (chấm trạng thái, fps, watch ghim, số lỗi), kéo được, chạm để mở.
+- Panel sortingOrder 32000 và đục hẳn (mặc định 1.0): chữ uGUI của game không còn lộ qua. Tap trên HUD bị chặn nhờ panel là
+  raycaster của EventSystem; blocker uGUI riêng bị bỏ. `IsPointerOverHud` dùng toạ độ panel.
+- Màn ngang dùng bố cục gọn (header / tab thấp hơn, panel chiếm tỉ lệ cao hơn).
+- Mọi màu / cỡ / bo góc là biến USS trong `DevToolsTheme.uss`. Package thêm phụ thuộc `com.unity.modules.uielements`.
+
+### Added
+- `Editor/HudAssetBuilder` sinh lại asset PanelSettings của HUD (chỉ dành cho người phát triển package).
+- `tools/player-smoke.py` chụp thêm tab Engine / Watch / Console và viên DEV.
+
+### Fixed
+- Test `DevTools.UI` chạy được ở batch mode có GPU (`--graphics`).
+
 ## [0.2.0] - 2026-10-01
 
 ### Changed
