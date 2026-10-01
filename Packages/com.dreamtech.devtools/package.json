@@ -1,6 +1,6 @@
 {
   "name": "com.dreamtech.devtools",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "displayName": "DreamTech DevTools",
   "description": "Bộ công cụ play-test lắp ráp kiểu Lego cho game Unity: một registry lệnh dùng chung cho HUD trong game (điện thoại, bản build, Editor), cửa sổ Editor và script tự động. Tiền, kho đồ, level, đồng hồ, quảng cáo, remote config, A/B, save cắm qua port chuẩn nên mọi game có cùng bộ lệnh; tính năng riêng của từng thể loại là module tự viết. Core thuần C#; chỉ chạy trong Editor, development build hoặc khi bật DREAMTECH_DEVTOOLS.",
   "unity": "2022.3",

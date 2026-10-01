@@ -79,6 +79,14 @@ chạy chúng. `Install` trả về một `IDisposable`: gọi `Dispose` khi đ�
 
 Module không cần tham chiếu tới đối tượng game thì chỉ cần gắn `[DevModule]`, có constructor rỗng, là được đăng ký tự động.
 
+**IL2CPP stripping:** module được tìm bằng reflection nên bản build IL2CPP có thể cắt mất kiểu `[DevModule]` của game. Package
+đã kèm `link.xml` giữ hai assembly của chính nó; với module nằm trong assembly của game, gắn `[UnityEngine.Scripting.Preserve]`
+lên class (hoặc thêm `link.xml` giữ assembly đó).
+
+**Bản phát hành:** `DREAMTECH_DEVTOOLS` chỉ dành cho bản QA. Bản không-development có define này sẽ bị cảnh báo khi build;
+bật `failReleaseBuildWithDefine` trong DevToolsSettings để biến cảnh báo thành lỗi build. Ngoài Editor / development build /
+define đó, `DevClock` và `DevAdOutcome` không có tác dụng.
+
 ## Port chuẩn → lệnh chuẩn
 
 | Port | Nhóm | Lệnh và watch |

@@ -2,6 +2,21 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), phiên bản theo [SemVer](https://semver.org/).
 
+## [0.1.1] - 2026-10-01
+
+### Fixed
+- `DevTools.Tick` không còn ném `ArgumentOutOfRangeException` khi một script chạy `tools.cancel-scripts` (duyệt trên bản chụp).
+- `DevClock.SetOffset` / `DevAdOutcome.Set` không làm gì khi dev tools chưa kích hoạt; `DevClock.Now` luôn trả giờ thật ở bản phát hành.
+- `DevToolsWindow.HasDefine` kiểm tra build target group đang chọn, không chỉ Standalone.
+- Sửa chú thích `DevTools.Install(object)` trong `DevRegistry`.
+
+### Added
+- `ReleaseBuildGuard`: cảnh báo khi bản build không-development có `DREAMTECH_DEVTOOLS`; `DevToolsSettings.failReleaseBuildWithDefine` biến nó thành lỗi build (mặc định tắt).
+- `Runtime/link.xml` giữ assembly của package trước IL2CPP stripping; README ghi rõ module của game cần `[Preserve]` hoặc `link.xml`.
+
+### Changed
+- HUD: viên DEV dựng lại nội dung tối đa 4 lần/giây, tab Quick tính chỉ số nhóm một lần, cache Canvas trong `Place`.
+
 ## [0.1.0] - 2026-09-26
 
 ### Added

@@ -18,9 +18,9 @@ namespace DreamTech.DevTools
 
 		public static TimeSpan Offset => new TimeSpan(_offsetTicks);
 
-		public static DateTime Now => _offsetTicks == 0 ? DateTime.Now : DateTime.Now.AddTicks(_offsetTicks);
+		public static DateTime Now => _offsetTicks == 0 || !DevTools.IsActive ? DateTime.Now : DateTime.Now.AddTicks(_offsetTicks);
 
-		public static DateTime UtcNow => _offsetTicks == 0 ? DateTime.UtcNow : DateTime.UtcNow.AddTicks(_offsetTicks);
+		public static DateTime UtcNow => _offsetTicks == 0 || !DevTools.IsActive ? DateTime.UtcNow : DateTime.UtcNow.AddTicks(_offsetTicks);
 
 		public static DateTime Today => Now.Date;
 
@@ -29,7 +29,7 @@ namespace DreamTech.DevTools
 
 		public static void SetOffset(TimeSpan offset)
 		{
-			if (offset.Ticks == _offsetTicks) return;
+			if (!DevTools.IsActive || offset.Ticks == _offsetTicks) return;
 			_offsetTicks = offset.Ticks;
 			OffsetChanged?.Invoke();
 		}
@@ -91,7 +91,11 @@ namespace DreamTech.DevTools
 
 		public static DevAdMode Get(DevAdKind kind) => _modes[(int)kind];
 
-		public static void Set(DevAdKind kind, DevAdMode mode) => _modes[(int)kind] = mode;
+		public static void Set(DevAdKind kind, DevAdMode mode)
+		{
+			if (!DevTools.IsActive) return;
+			_modes[(int)kind] = mode;
+		}
 
 		public static int Requests(DevAdKind kind) => _requests[(int)kind];
 

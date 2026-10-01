@@ -60,6 +60,10 @@ namespace DreamTech.DevTools.Unity
 		readonly Dictionary<DevWatch, string> _watchCache = new Dictionary<DevWatch, string>();
 		readonly Dictionary<DevWatch, float> _watchDue = new Dictionary<DevWatch, float>();
 		float _fps, _fpsAcc;
+		GUIContent _pillContent;
+		float _pillBuiltAt = -1f;
+		int _pillErrors = -1;
+		readonly Dictionary<RectTransform, Canvas> _canvasOf = new Dictionary<RectTransform, Canvas>();
 		int _fpsFrames;
 
 		float _scale;
@@ -252,7 +256,8 @@ namespace DreamTech.DevTools.Unity
 			bool on = r.width > 0 && _scale > 0;
 			if (rt.gameObject.activeSelf != on) rt.gameObject.SetActive(on);
 			if (!on) return;
-			var canvas = rt.GetComponentInParent<Canvas>();
+			if (!_canvasOf.TryGetValue(rt, out var canvas) || canvas == null)
+				_canvasOf[rt] = canvas = rt.GetComponentInParent<Canvas>();
 			float k = canvas != null && canvas.scaleFactor > 0 ? 1f / canvas.scaleFactor : 1f;
 			rt.anchoredPosition = new Vector2(r.x * _scale, Screen.height - r.yMax * _scale) * k;
 			rt.sizeDelta = new Vector2(r.width * _scale, r.height * _scale) * k;
@@ -299,14 +304,21 @@ namespace DreamTech.DevTools.Unity
 
 		void DrawPill()
 		{
-			var sb = new System.Text.StringBuilder("DEV ").Append(_fps.ToString("0", Inv));
-			foreach (var w in _reg.Watches)
-				if (w.Pinned && _watchCache.TryGetValue(w, out string v))
-					sb.Append("  ").Append(w.Label).Append(' ').Append(v);
 			int errors = DevToolsHost.ErrorCount;
 			var style = errors > 0 ? _pillErr : _pillStyle;
-			if (errors > 0) sb.Insert(0, "! " + errors + " err  ");
-			var content = new GUIContent(sb.ToString());
+			// Rebuilt a few times per second (or when the error count changes), not on every IMGUI event.
+			if (_pillContent == null || errors != _pillErrors || Time.unscaledTime - _pillBuiltAt > 0.25f)
+			{
+				var sb = new System.Text.StringBuilder("DEV ").Append(_fps.ToString("0", Inv));
+				foreach (var w in _reg.Watches)
+					if (w.Pinned && _watchCache.TryGetValue(w, out string v))
+						sb.Append("  ").Append(w.Label).Append(' ').Append(v);
+				if (errors > 0) sb.Insert(0, "! " + errors + " err  ");
+				_pillContent = new GUIContent(sb.ToString());
+				_pillErrors = errors;
+				_pillBuiltAt = Time.unscaledTime;
+			}
+			var content = _pillContent;
 			var size = style.CalcSize(content);
 			size.x = Mathf.Min(size.x, _screen.width);
 			_pillRect = new Rect(_screen.x + _pill.x * (_screen.width - size.x), _screen.y + _pill.y * (_screen.height - size.y), size.x, size.y);
@@ -462,7 +474,10 @@ namespace DreamTech.DevTools.Unity
 				if (list.Count == 0) GUILayout.Label("Star (☆) a command in any tab to keep it here.", _small);
 			}
 			string cat = null;
-			foreach (var c in list.OrderBy(c => _reg.Categories.ToList().IndexOf(c.Category)))
+			var categoryIndex = new Dictionary<string, int>();
+			foreach (var category in _reg.Categories)
+				if (!categoryIndex.ContainsKey(category)) categoryIndex[category] = categoryIndex.Count;
+			foreach (var c in list.OrderBy(c => categoryIndex.TryGetValue(c.Category, out int index) ? index : -1))
 			{
 				if (c.Category != cat)
 				{
