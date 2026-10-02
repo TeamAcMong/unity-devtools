@@ -835,19 +835,21 @@
     top: 0;
     flex-direction: row;
     align-items: center;
-    height: 40px;
-    padding: 0 16px 0 14px;
+    height: 34px;
+    padding: 0 12px 0 11px;
     background-color: var(--dt-bg);
     border-width: 1px;
     border-color: var(--dt-border-strong);
     border-radius: var(--dt-radius-pill);
     opacity: 0.94;
+    transition-property: scale, border-color, background-color;
+    transition-duration: 0.12s;
 }
 
 .dt-pill__dot {
     width: 10px;
     height: 10px;
-    margin-right: 8px;
+    margin-right: 7px;
     border-radius: 5px;
     background-color: var(--dt-positive);
 }
@@ -861,17 +863,40 @@
     white-space: nowrap;
 }
 
-.dt-pill--error {
+/* pinned watches, only in the expanded pill */
+.dt-pill__detail {
+    margin: 0 0 0 10px;
+    padding: 0;
+    font-size: var(--dt-font-body);
+    color: var(--dt-text);
+    white-space: nowrap;
+}
+
+/* error count: small round red badge, only while there are errors */
+.dt-pill__badge {
+    min-width: 20px;
+    height: 20px;
+    margin: 0 0 0 8px;
+    padding: 0 6px;
+    border-radius: 10px;
     background-color: var(--dt-danger);
-    border-color: var(--dt-danger-hover);
-}
-
-.dt-pill--error .dt-pill__text {
     color: var(--dt-on-accent);
+    font-size: 12px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    white-space: nowrap;
 }
 
-.dt-pill--error .dt-pill__dot {
-    background-color: var(--dt-on-accent);
+.dt-pill--error {
+    background-color: var(--dt-danger-solid);
+    border-color: var(--dt-danger);
+}
+
+/* the long-press cue: the pill swells and its rim lights up */
+.dt-pill--holding {
+    scale: 1.1 1.1;
+    border-color: var(--dt-warning);
+    opacity: 1;
 }
 
 /* ---- dropdown popup (added to the panel root) ------------------------------------------------------------------ */

@@ -2,6 +2,24 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), phiên bản theo [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- Viên DEV gọn hơn: mặc định chỉ có chấm trạng thái + số fps (vd `● 60`); khi có lỗi console hiện thêm huy hiệu tròn đỏ
+  chứa số lỗi (tối đa `99+`). Viên vẫn ngả sắc đỏ nhẹ khi có lỗi nhưng không dài ra.
+
+### Added
+- Nhấn giữ viên DEV ~0,5 giây (giờ không scale, không kéo quá ngưỡng kéo) để chuyển Compact / Expanded: Expanded hiện thêm
+  watch đã ghim như bản cũ. Có hiệu ứng phồng + sáng viền khi đang giữ; thả tay sau khi chuyển không mở panel. Chạm ngắn vẫn mở
+  panel, kéo vẫn di chuyển viên (và không kích hoạt nhấn giữ). Trạng thái lưu ở PlayerPrefs (`DevToolsKeys.HudPillExpanded`, nằm
+  trong `DevToolsKeys.All` nên sống sót khi xoá save).
+- `DevToolsSettings.PillStyle` (Compact / Detailed, mặc định Compact): kiểu ban đầu khi chưa có giá trị PlayerPrefs. Asset cũ
+  đọc vẫn đúng.
+- `DevToolsHud.PillExpanded`; lệnh `hud.pill-expanded` và `logs.log-test-error` (ghi một lỗi để thử huy hiệu).
+- Viên DEV tự kẹp lại vào safe area khi đổi độ rộng; chuỗi dựng bằng StringBuilder dùng lại, chỉ gán lại text khi đổi.
+- Test PlayMode `DevTools.UI` (`HudPillTests`): chạm mở panel, nhấn giữ bật/tắt Expanded và không mở panel, kéo không bật/tắt,
+  nội dung compact so với expanded, huy hiệu lỗi `99+`.
+
 ## [0.3.0] - 2026-10-02
 
 ### Changed

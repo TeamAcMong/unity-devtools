@@ -22,6 +22,16 @@ namespace DreamTech.DevTools.Unity
 			public string Script = "";
 		}
 
+		/// <summary>Look of the DEV pill. Values are serialized by number: only append.</summary>
+		public enum PillStyleKind
+		{
+			/// <summary>Status dot, fps and a red badge with the error count.</summary>
+			Compact = 0,
+
+			/// <summary>Compact plus the pinned watches.</summary>
+			Detailed = 1,
+		}
+
 		[Header("Runtime")]
 		[Tooltip("Create the host and HUD automatically at startup (Editor, development builds, DREAMTECH_DEVTOOLS builds).")]
 		public bool AutoStart = true;
@@ -31,6 +41,9 @@ namespace DreamTech.DevTools.Unity
 
 		[Tooltip("Start with the HUD hidden (F2 / multi-finger tap shows it).")]
 		public bool StartHidden;
+
+		[Tooltip("Initial look of the DEV pill (Compact: fps + error badge; Detailed: also the pinned watches). A long-press on the pill toggles it and the choice is remembered on the device.")]
+		public PillStyleKind PillStyle = PillStyleKind.Compact;
 
 		[Tooltip("Keys that open / close the panel (read from IMGUI events: works with either input backend).")]
 		public KeyCode[] OpenKeys = { KeyCode.F1, KeyCode.BackQuote };
