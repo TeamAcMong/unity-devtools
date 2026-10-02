@@ -14,7 +14,7 @@ namespace DreamTech.DevTools.Unity
 		UIDocument _document;
 		PanelSettings _panelSettings;
 		VisualElement _root, _panelElement, _pill, _pillDot, _searchSlot, _searchBox, _consoleRow;
-		Label _title, _stats, _toast, _pillText, _searchPlaceholder;
+		Label _title, _stats, _toast, _pillText, _pillDetail, _pillBadge, _searchPlaceholder;
 		Button _dockButton, _sizeButton, _closeButton, _searchClear;
 		DevIcon _dockIcon;
 		TextField _searchField;
@@ -24,7 +24,10 @@ namespace DreamTech.DevTools.Unity
 		string _tabsKey = "";
 		bool _revealTab, _contentDirty = true, _logDirty, _wasOpen;
 		float _toastUntil, _nextRefresh;
-		bool _pillPressed, _pillDragging;
+		bool _pillPressed, _pillDragging, _pillLongPressed;
+		float _pillPressedAt;
+		string _pillTextShown = "", _pillDetailShown = "", _pillBadgeShown = "";
+		readonly StringBuilder _pillBuilder = new StringBuilder(64);
 		Vector2 _pillPressPosition, _pillGrab;
 		Rect _safeLogical;
 
@@ -127,10 +130,22 @@ namespace DreamTech.DevTools.Unity
 			_pillDot.AddToClassList("dt-pill__dot");
 			_pill.Insert(0, _pillDot);
 			_pillText.pickingMode = PickingMode.Ignore;
+			_pillDetail = new Label { name = "dt-pill-detail", pickingMode = PickingMode.Ignore };
+			_pillDetail.AddToClassList("dt-pill__detail");
+			_pill.Add(_pillDetail);
+			_pillBadge = new Label { name = "dt-pill-badge", pickingMode = PickingMode.Ignore };
+			_pillBadge.AddToClassList("dt-pill__badge");
+			_pill.Add(_pillBadge);
+			Show(_pillDetail, _pillExpanded);
+			Show(_pillBadge, false);
+			// the pill grows and shrinks with its content: keep it inside the safe area
+			_pill.RegisterCallback<GeometryChangedEvent>(_ => PlacePill());
 			_pill.RegisterCallback<PointerDownEvent>(e =>
 			{
 				_pillPressed = true;
 				_pillDragging = false;
+				_pillLongPressed = false;
+				_pillPressedAt = Time.unscaledTime;
 				_pillPressPosition = e.position;
 				_pillGrab = (Vector2)e.position - new Vector2(_pill.resolvedStyle.left, _pill.resolvedStyle.top);
 				_pill.CapturePointer(e.pointerId);
@@ -139,8 +154,9 @@ namespace DreamTech.DevTools.Unity
 			_pill.RegisterCallback<PointerMoveEvent>(e =>
 			{
 				if (!_pillPressed || !_pill.HasPointerCapture(e.pointerId)) return;
-				if (!_pillDragging && ((Vector2)e.position - _pillPressPosition).magnitude > Tuning.PillDragThreshold) _pillDragging = true;
+				if (!_pillDragging && !_pillLongPressed && ((Vector2)e.position - _pillPressPosition).magnitude > Tuning.PillDragThreshold) _pillDragging = true;
 				if (!_pillDragging) return;
+				_pill.RemoveFromClassList("dt-pill--holding");
 				Vector2 topLeft = (Vector2)e.position - _pillGrab;
 				float freeX = Mathf.Max(1f, _safeLogical.width - _pill.resolvedStyle.width);
 				float freeY = Mathf.Max(1f, _safeLogical.height - _pill.resolvedStyle.height);
@@ -152,16 +168,53 @@ namespace DreamTech.DevTools.Unity
 				if (!_pillPressed) return;
 				_pillPressed = false;
 				if (_pill.HasPointerCapture(e.pointerId)) _pill.ReleasePointer(e.pointerId);
+				_pill.RemoveFromClassList("dt-pill--holding");
 				if (_pillDragging) PlayerPrefs.SetString(DevToolsKeys.HudPill, _pillPosition.x.ToString("0.###", Inv) + "," + _pillPosition.y.ToString("0.###", Inv));
-				else Open(true);
+				else if (!_pillLongPressed) Open(true); // a long-press already did its job: releasing must not also open the panel
 				_pillDragging = false;
+				_pillLongPressed = false;
 				e.StopPropagation();
 			});
 			_pill.RegisterCallback<PointerCaptureOutEvent>(_ =>
 			{
 				_pillPressed = false;
 				_pillDragging = false;
+				_pillLongPressed = false;
+				_pill.RemoveFromClassList("dt-pill--holding");
 			});
+		}
+
+		/// <summary>Called every frame: the long-press fires on the clock, not on a pointer event (a held finger sends none).</summary>
+		void TickPillHold()
+		{
+			if (!_pillPressed || _pillDragging || _pillLongPressed || _open) return;
+			float held = Time.unscaledTime - _pillPressedAt;
+			if (held >= Tuning.PillLongPressSeconds)
+			{
+				_pillLongPressed = true;
+				SetPillExpanded(!_pillExpanded);
+				_pill.RemoveFromClassList("dt-pill--holding");
+			}
+			else if (held >= Tuning.PillHoldCueSeconds) _pill.AddToClassList("dt-pill--holding");
+		}
+
+		void SetPillExpanded(bool expanded)
+		{
+			if (_pillExpanded == expanded) return;
+			_pillExpanded = expanded;
+			PlayerPrefs.SetInt(DevToolsKeys.HudPillExpanded, expanded ? 1 : 0);
+			if (_pillDetail != null) Show(_pillDetail, expanded);
+			_nextRefresh = 0f; // refill the texts now
+		}
+
+		/// <summary>Pill position from its stored fraction of the free safe-area space (so a width change cannot push it off screen).</summary>
+		void PlacePill()
+		{
+			if (_pill == null || _open) return;
+			float width = float.IsNaN(_pill.resolvedStyle.width) ? 100f : _pill.resolvedStyle.width;
+			float height = float.IsNaN(_pill.resolvedStyle.height) ? 34f : _pill.resolvedStyle.height;
+			_pill.style.left = _safeLogical.x + _pillPosition.x * Mathf.Max(0f, _safeLogical.width - width);
+			_pill.style.top = _safeLogical.y + _pillPosition.y * Mathf.Max(0f, _safeLogical.height - height);
 		}
 
 		/// <summary>Search box: icon, field, placeholder and a clear button, all in one rounded container.</summary>
@@ -233,6 +286,7 @@ namespace DreamTech.DevTools.Unity
 			Show(_panelElement, panelOn);
 			Show(_pill, !panelOn);
 			ApplyLayout();
+			TickPillHold();
 
 			if (panelOn)
 			{
@@ -291,13 +345,7 @@ namespace DreamTech.DevTools.Unity
 			}
 			_panelElement.style.opacity = Mathf.Max(_alpha, Tuning.MinimumPanelAlpha);
 
-			if (!_open)
-			{
-				float width = float.IsNaN(_pill.resolvedStyle.width) ? 100f : _pill.resolvedStyle.width;
-				float height = float.IsNaN(_pill.resolvedStyle.height) ? 40f : _pill.resolvedStyle.height;
-				_pill.style.left = _safeLogical.x + _pillPosition.x * Mathf.Max(0f, _safeLogical.width - width);
-				_pill.style.top = _safeLogical.y + _pillPosition.y * Mathf.Max(0f, _safeLogical.height - height);
-			}
+			PlacePill();
 		}
 
 		void RefreshStats()
@@ -307,16 +355,43 @@ namespace DreamTech.DevTools.Unity
 			_stats.text = errors > 0 ? errors + " err  ·  " + fps : fps;
 			_stats.EnableInClassList("dt-chip--error", errors > 0);
 
-			if (!_open)
+			if (!_open) RefreshPill(errors);
+		}
+
+		/// <summary>Compact: fps + error badge. Expanded: fps + pinned watches + badge. Texts are only reassigned when they change.</summary>
+		void RefreshPill(int errors)
+		{
+			_pillBuilder.Clear().Append(_fps.ToString("0", Inv));
+			SetPillLabel(_pillText, _pillBuilder, ref _pillTextShown);
+			if (_pillExpanded)
 			{
-				var sb = new StringBuilder("DEV ").Append(_fps.ToString("0", Inv));
+				_pillBuilder.Clear();
 				foreach (var w in _reg.Watches)
-					if (w.Pinned && _watchCache.TryGetValue(w, out string v))
-						sb.Append("   ").Append(w.Label).Append(' ').Append(v);
-				if (errors > 0) sb.Append("   ").Append(errors).Append(" err");
-				_pillText.text = sb.ToString();
-				_pill.EnableInClassList("dt-pill--error", errors > 0);
+				{
+					if (!w.Pinned || !_watchCache.TryGetValue(w, out string v)) continue;
+					if (_pillBuilder.Length > 0) _pillBuilder.Append("   ");
+					_pillBuilder.Append(w.Label).Append(' ').Append(v);
+				}
+				SetPillLabel(_pillDetail, _pillBuilder, ref _pillDetailShown);
+				Show(_pillDetail, _pillBuilder.Length > 0);
 			}
+			if (errors > 0)
+			{
+				_pillBuilder.Clear();
+				if (errors > Tuning.PillBadgeMaxErrors) _pillBuilder.Append(Tuning.PillBadgeMaxErrors).Append('+');
+				else _pillBuilder.Append(errors);
+				SetPillLabel(_pillBadge, _pillBuilder, ref _pillBadgeShown);
+			}
+			Show(_pillBadge, errors > 0);
+			_pill.EnableInClassList("dt-pill--error", errors > 0);
+		}
+
+		static void SetPillLabel(Label label, StringBuilder text, ref string shown)
+		{
+			string built = text.ToString();
+			if (built == shown) return;
+			shown = built;
+			label.text = built;
 		}
 
 		// ---- tabs ----------------------------------------------------------------------------------------------------

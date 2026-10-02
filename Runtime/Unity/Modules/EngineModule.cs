@@ -208,6 +208,11 @@ namespace DreamTech.DevTools.Unity
 					if (DevToolsHost.Logs[i].Type != LogType.Warning) return FirstLine(DevToolsHost.Logs[i].Message);
 				return "none";
 			});
+			r.Action(Cat, "Log test error", () =>
+			{
+				Debug.LogError("[DevTools] test error (Logs > Log test error)");
+				return DevResult.Success("logged one error: the DEV pill shows a red badge");
+			}, "Writes one error to the Unity console (checks the pill badge and the Log tab).");
 			r.Action(Cat, "Show recent", new[] { DevParam.Int("count", 10), DevParam.Bool("warnings", false), DevParam.Bool("stack", false) }, a =>
 			{
 				var items = DevToolsHost.Logs.Where(l => a.Bool(1) || l.Type != LogType.Warning).Reverse().Take(Math.Max(1, a.Int(0))).ToList();
@@ -249,6 +254,11 @@ namespace DreamTech.DevTools.Unity
 				DevToolsHud.Open(false);
 				return DevResult.Success("closed");
 			});
+			r.Action(Cat, "Pill expanded", new[] { DevParam.Bool("expanded", true) }, a =>
+			{
+				DevToolsHud.PillExpanded = a.Bool(0);
+				return DevResult.Success("pill " + (DevToolsHud.PillExpanded ? "expanded (fps + pinned watches)" : "compact (fps)"));
+			}, "Same as a long-press on the DEV pill.");
 			r.Action(Cat, "Hide HUD", () =>
 			{
 				DevToolsHud.SetHidden(true);

@@ -13,7 +13,8 @@ namespace DreamTech.DevTools.Unity
 	/// In-game panel built with UI Toolkit (mouse, keyboard and touch; scales with the screen). The package ships its own
 	/// UXML / USS / theme under Resources/DreamTechDevTools and creates the PanelSettings at runtime, so no project asset is needed.
 	/// <list type="bullet">
-	/// <item>DEV pill: drag to move, tap to open; shows fps, pinned watches and the error count of the console.</item>
+	/// <item>DEV pill: drag to move, tap to open; shows the fps and a badge with the error count of the
+	/// console; a long-press (0.5 s) expands it to the pinned watches and back.</item>
 	/// <item>Tabs: Quick (quick + starred commands, search), one per category, Scenarios (presets), Watch, Console, Log.</item>
 	/// <item>Open keys (default F1 and `), hide key (F2) and a multi-finger tap (default 3) from <see cref="DevToolsSettings"/>.</item>
 	/// </list>
@@ -43,6 +44,9 @@ namespace DreamTech.DevTools.Unity
 			public const float ConfirmSeconds = 5f;
 			public const float RefreshSeconds = 0.2f;
 			public const float PillDragThreshold = 6f;
+			public const float PillLongPressSeconds = 0.5f;
+			public const float PillHoldCueSeconds = 0.15f;
+			public const int PillBadgeMaxErrors = 99;
 			public const int ToastMaxCharacters = 110;
 			public const int PathTokenMinLength = 12;
 			public const int MaxLogRows = 150;
@@ -60,6 +64,7 @@ namespace DreamTech.DevTools.Unity
 		bool _dockBottom;
 		float _userScale = 1f, _alpha = Tuning.DefaultPanelAlpha;
 		Vector2 _pillPosition = new Vector2(0f, 0.55f);
+		bool _pillExpanded;
 		readonly HashSet<string> _fav = new HashSet<string>();
 		readonly Dictionary<DevCommand, string[]> _values = new Dictionary<DevCommand, string[]>();
 		DevCommand _commandBeingRun;
@@ -139,6 +144,13 @@ namespace DreamTech.DevTools.Unity
 			}
 		}
 
+		/// <summary>Expanded DEV pill (fps + pinned watches + error badge) instead of the compact one. Remembered on the device.</summary>
+		public static bool PillExpanded
+		{
+			get => _instance != null && _instance._pillExpanded;
+			set => _instance?.SetPillExpanded(value);
+		}
+
 		/// <summary>True when a screen point (pixels, origin bottom-left) is over the visible HUD.</summary>
 		public static bool IsPointerOverHud(Vector2 screen)
 		{
@@ -164,6 +176,7 @@ namespace DreamTech.DevTools.Unity
 			_userScale = Mathf.Clamp(PlayerPrefs.GetFloat(DevToolsKeys.HudScale, 1f), 0.5f, 2.5f);
 			_alpha = Mathf.Clamp(PlayerPrefs.GetFloat(DevToolsKeys.HudAlpha, Tuning.DefaultPanelAlpha), 0.3f, 1f);
 			_hidden = PlayerPrefs.GetInt(DevToolsKeys.HudHidden, _settings.StartHidden ? 1 : 0) == 1;
+			_pillExpanded = PlayerPrefs.GetInt(DevToolsKeys.HudPillExpanded, _settings.PillStyle == DevToolsSettings.PillStyleKind.Detailed ? 1 : 0) == 1;
 			var parts = PlayerPrefs.GetString(DevToolsKeys.HudPill, "").Split(',');
 			if (parts.Length == 2 && float.TryParse(parts[0], NumberStyles.Float, Inv, out float px) && float.TryParse(parts[1], NumberStyles.Float, Inv, out float py))
 				_pillPosition = new Vector2(Mathf.Clamp01(px), Mathf.Clamp01(py));

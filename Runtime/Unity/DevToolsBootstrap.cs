@@ -22,10 +22,11 @@ namespace DreamTech.DevTools.Unity
 		public const string HudTab = "DreamTech.DevTools.Tab";
 		public const string HudScale = "DreamTech.DevTools.Scale";
 		public const string HudAlpha = "DreamTech.DevTools.Alpha";
+		public const string HudPillExpanded = "DreamTech.DevTools.PillExpanded";
 
 		public static readonly string[] All =
 		{
-			BootOnce, BootAlways, ClockOffset, HudHidden, HudFavorites, HudPill, HudSize, HudDock, HudTab, HudScale, HudAlpha,
+			BootOnce, BootAlways, ClockOffset, HudHidden, HudFavorites, HudPill, HudSize, HudDock, HudTab, HudScale, HudAlpha, HudPillExpanded,
 		};
 	}
 
