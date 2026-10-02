@@ -2,7 +2,7 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), phiên bản theo [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [0.3.0] - 2026-10-02
 
 ### Changed
 - HUD viết lại bằng UI Toolkit (UXML + USS + PanelSettings nằm trong `Runtime/Unity/Resources/DreamTechDevTools`), giao diện tối
