@@ -2,7 +2,7 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), phiên bản theo [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [0.3.1] - 2026-10-05
 
 ### Changed
 - Viên DEV gọn hơn: mặc định chỉ có chấm trạng thái + số fps (vd `● 60`); khi có lỗi console hiện thêm huy hiệu tròn đỏ
