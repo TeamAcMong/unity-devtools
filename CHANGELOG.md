@@ -2,6 +2,12 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), phiên bản theo [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- Chạm trên điện thoại không còn bị nhận nhầm là kéo: ngưỡng kéo theo DPI (~2.5 mm ngón tay, tối thiểu 8 px logic) cho thanh tab, danh sách và viên DEV; rung lệch trục huỷ cú kéo.
+- Danh sách không còn giật một đoạn bằng ngưỡng khi bắt đầu kéo; quán tính chỉ chạy với cú vuốt thật (900 px/s, thả trong 50 ms).
+
 ## [0.3.1] - 2026-10-05
 
 ### Changed
