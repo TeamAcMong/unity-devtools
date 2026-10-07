@@ -14,9 +14,24 @@ namespace DreamTech.DevTools.Unity
 	/// </summary>
 	sealed class DragScrollManipulator : Manipulator
 	{
-		/// <summary>Movement (logical panel pixels) along the axis before a press turns into a drag.</summary>
+		/// <summary>Minimum movement (logical panel pixels) along the axis before a press turns into a drag; see <see cref="TouchSlop"/>.</summary>
 		public const float DragThreshold = 8f;
-		const float InertiaStartSpeed = 250f, InertiaStopSpeed = 30f, InertiaDecayPerSecond = 4.5f, VelocitySmoothing = 0.35f;
+		/// <summary>Physical finger slop: a tap on a phone wobbles a few millimetres, which is many logical pixels on a dense screen.</summary>
+		const float TouchSlopInches = 0.1f, FallbackDpi = 160f;
+		const float InertiaStartSpeed = 900f, InertiaStopSpeed = 40f, InertiaDecayPerSecond = 5.5f, VelocitySmoothing = 0.35f;
+
+		/// <summary>
+		/// Drag threshold in logical panel pixels for this panel: the larger of <paramref name="minimumLogical"/> and ~2.5 mm of
+		/// finger travel converted through the screen DPI and the panel scale.
+		/// </summary>
+		public static float TouchSlop(VisualElement element, float minimumLogical)
+		{
+			float panelWidth = element?.panel?.visualTree?.layout.width ?? 0f;
+			if (!(panelWidth > 1f) || Screen.width <= 0) return minimumLogical;
+			float physicalPerLogical = Screen.width / panelWidth;
+			float dpi = Screen.dpi > 1f ? Screen.dpi : FallbackDpi;
+			return Mathf.Max(minimumLogical, dpi * TouchSlopInches / physicalPerLogical);
+		}
 
 		readonly bool _horizontal;
 		bool _pressed, _dragging;
@@ -112,9 +127,22 @@ namespace DreamTech.DevTools.Unity
 			Vector2 position = e.position;
 			if (!_dragging)
 			{
-				if (Mathf.Abs(Axis(position - _startPosition)) < DragThreshold) return;
+				Vector2 travel = position - _startPosition;
+				float along = Mathf.Abs(Axis(travel)), across = Mathf.Abs(_horizontal ? travel.y : travel.x);
+				float slop = TouchSlop(target, DragThreshold);
+				if (along < slop)
+				{
+					// moving mostly across the axis is not a scroll here: let go so the press stays a tap / belongs to the other scroller
+					if (across >= slop) Reset();
+					return;
+				}
 				_dragging = true;
 				target.CapturePointer(_pointerId); // the pressed child loses the capture: its Clickable never fires
+				// start scrolling from here, so the content does not jump by the slop distance
+				_startPosition = _lastPosition = position;
+				_startOffset = Scroll.scrollOffset;
+				_lastTime = Time.unscaledTime;
+				_velocity = 0f;
 			}
 			SetOffset(Axis(_startOffset) - Axis(position - _startPosition));
 			float now = Time.unscaledTime;
@@ -137,8 +165,8 @@ namespace DreamTech.DevTools.Unity
 			if (!wasDragging) return;
 			if (target.HasPointerCapture(_pointerId)) target.ReleasePointer(_pointerId);
 			e.StopPropagation();
-			// a finger that stopped before lifting must not fling
-			if (Time.unscaledTime - _lastTime < 0.08f && Mathf.Abs(_velocity) > InertiaStartSpeed) StartInertia();
+			// a finger that stopped before lifting must not fling; only a real flick does
+			if (Time.unscaledTime - _lastTime < 0.05f && Mathf.Abs(_velocity) > InertiaStartSpeed) StartInertia();
 		}
 
 		void OnCancel(PointerCancelEvent e)

@@ -154,7 +154,7 @@ namespace DreamTech.DevTools.Unity
 			_pill.RegisterCallback<PointerMoveEvent>(e =>
 			{
 				if (!_pillPressed || !_pill.HasPointerCapture(e.pointerId)) return;
-				if (!_pillDragging && !_pillLongPressed && ((Vector2)e.position - _pillPressPosition).magnitude > Tuning.PillDragThreshold) _pillDragging = true;
+				if (!_pillDragging && !_pillLongPressed && ((Vector2)e.position - _pillPressPosition).magnitude > DragScrollManipulator.TouchSlop(_pill, Tuning.PillDragThreshold)) _pillDragging = true;
 				if (!_pillDragging) return;
 				_pill.RemoveFromClassList("dt-pill--holding");
 				Vector2 topLeft = (Vector2)e.position - _pillGrab;

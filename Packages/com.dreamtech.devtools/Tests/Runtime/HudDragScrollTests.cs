@@ -145,5 +145,50 @@ namespace DreamTech.DevTools.Tests
 			yield return null;
 			Assert.AreEqual(1, _ran, "a tap on Run must run the command (" + kind[0] + ")");
 		}
+
+		/// <summary>The drag threshold the HUD uses on this screen (DragScrollManipulator is internal).</summary>
+		static float Slop(VisualElement element)
+		{
+			var type = typeof(DevToolsHud).Assembly.GetType("DreamTech.DevTools.Unity.DragScrollManipulator");
+			return (float)type.GetMethod("TouchSlop", BindingFlags.Static | BindingFlags.Public).Invoke(null, new object[] { element, 8f });
+		}
+
+		[UnityTest]
+		public IEnumerator AWobblyTapOnRunStillRunsAndDoesNotScroll()
+		{
+			var root = Root();
+			var body = root.Q<ScrollView>("dt-body");
+			var run = root.Q<Button>(className: "dt-btn--primary");
+			float slop = Slop(body);
+			float before = body.scrollOffset.y;
+			Vector2 at = run.worldBound.center;
+			// a finger lands and wobbles a little in both directions, staying under the slop
+			Send<PointerDownEvent>(run, at, "touch", 1);
+			Send<PointerMoveEvent>(run, at + new Vector2(slop * 0.4f, slop * 0.7f), "touch", 1);
+			Send<PointerMoveEvent>(run, at + new Vector2(-slop * 0.3f, -slop * 0.6f), "touch", 1);
+			Send<PointerUpEvent>(run, at + new Vector2(0f, slop * 0.5f), "touch", 1);
+			yield return null;
+			Assert.AreEqual(before, body.scrollOffset.y, 0.01f, "a wobble under the slop must not scroll");
+			Assert.AreEqual(1, _ran, "a wobbly tap must still press Run (slop " + slop + ")");
+		}
+
+		[UnityTest]
+		public IEnumerator ADragStartsScrollingFromWhereItCrossedTheSlop()
+		{
+			var root = Root();
+			var body = root.Q<ScrollView>("dt-body");
+			Assert.Greater(body.verticalScroller.highValue, 80f, "the body must overflow for this test");
+			var run = root.Q<Button>(className: "dt-btn--primary");
+			float slop = Slop(body);
+			float before = body.scrollOffset.y;
+			Vector2 at = run.worldBound.center;
+			Send<PointerDownEvent>(run, at, "touch", 1);
+			Send<PointerMoveEvent>(run, at + new Vector2(0f, -(slop + 1f)), "touch", 1); // crosses the slop: the drag starts here
+			Send<PointerMoveEvent>(run, at + new Vector2(0f, -(slop + 1f + 50f)), "touch", 1);
+			Send<PointerUpEvent>(run, at + new Vector2(0f, -(slop + 1f + 50f)), "touch", 1);
+			yield return null;
+			Assert.AreEqual(50f, body.scrollOffset.y - before, 1f, "the content must follow the finger from the crossing point, not jump by the slop");
+			Assert.AreEqual(0, _ran);
+		}
 	}
 }
