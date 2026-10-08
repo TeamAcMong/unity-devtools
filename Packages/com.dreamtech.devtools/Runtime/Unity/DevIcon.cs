@@ -20,6 +20,11 @@ namespace DreamTech.DevTools.Unity
 			Plus,
 			Minus,
 			Search,
+			Check,
+			Reload,
+			ChevronLeft,
+			ChevronRight,
+			Expand,
 		}
 
 		Shape _shape;
@@ -111,6 +116,59 @@ namespace DreamTech.DevTools.Unity
 					p.LineTo(new Vector2(c.x + h * 0.55f, c.y));
 					p.Stroke();
 					break;
+				case Shape.Check:
+					p.BeginPath();
+					p.MoveTo(new Vector2(c.x - h * 0.6f, c.y + h * 0.02f));
+					p.LineTo(new Vector2(c.x - h * 0.15f, c.y + h * 0.45f));
+					p.LineTo(new Vector2(c.x + h * 0.62f, c.y - h * 0.45f));
+					p.Stroke();
+					break;
+				case Shape.Reload:
+				{
+					// an open circle with an arrow head at its end
+					// three quarters of a circle (gap at the top right) ending in an arrow head, like a refresh glyph
+					float radius = h * 0.6f;
+					p.BeginPath();
+					p.Arc(c, radius, Angle.Degrees(-20f), Angle.Degrees(250f));
+					p.Stroke();
+					float endAngle = -20f * Mathf.Deg2Rad;
+					var end = c + new Vector2(Mathf.Cos(endAngle), Mathf.Sin(endAngle)) * radius;
+					p.BeginPath();
+					p.MoveTo(end + new Vector2(-h * 0.5f, -h * 0.08f));
+					p.LineTo(end + new Vector2(h * 0.04f, -h * 0.02f));
+					p.LineTo(end + new Vector2(h * 0.12f, -h * 0.56f));
+					p.Stroke();
+					break;
+				}
+				case Shape.ChevronLeft:
+				case Shape.ChevronRight:
+				{
+					float dx = _shape == Shape.ChevronLeft ? -1f : 1f;
+					p.BeginPath();
+					p.MoveTo(new Vector2(c.x - dx * h * 0.22f, c.y - h * 0.55f));
+					p.LineTo(new Vector2(c.x + dx * h * 0.33f, c.y));
+					p.LineTo(new Vector2(c.x - dx * h * 0.22f, c.y + h * 0.55f));
+					p.Stroke();
+					break;
+				}
+				case Shape.Expand:
+				{
+					// two corner brackets pointing outwards (top-right, bottom-left)
+					float a = h * 0.62f, b = h * 0.12f;
+					p.BeginPath();
+					p.MoveTo(new Vector2(c.x + b, c.y - a));
+					p.LineTo(new Vector2(c.x + a, c.y - a));
+					p.LineTo(new Vector2(c.x + a, c.y - b));
+					p.MoveTo(new Vector2(c.x - b, c.y + a));
+					p.LineTo(new Vector2(c.x - a, c.y + a));
+					p.LineTo(new Vector2(c.x - a, c.y + b));
+					p.MoveTo(new Vector2(c.x + a, c.y - a));
+					p.LineTo(new Vector2(c.x + h * 0.15f, c.y - h * 0.15f));
+					p.MoveTo(new Vector2(c.x - a, c.y + a));
+					p.LineTo(new Vector2(c.x - h * 0.15f, c.y + h * 0.15f));
+					p.Stroke();
+					break;
+				}
 				case Shape.Search:
 				{
 					var lens = new Vector2(c.x - h * 0.12f, c.y - h * 0.12f);

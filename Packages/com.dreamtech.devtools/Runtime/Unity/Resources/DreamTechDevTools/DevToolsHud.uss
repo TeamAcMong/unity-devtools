@@ -149,6 +149,84 @@
     color: var(--dt-text);
 }
 
+/* command styles: color says what the command does (DevCommandStyle) */
+
+.dt-btn--danger:active {
+    background-color: var(--dt-danger-press);
+    color: var(--dt-on-accent);
+}
+
+.dt-btn--positive {
+    background-color: var(--dt-positive);
+    color: var(--dt-on-accent);
+    min-width: 78px;
+}
+
+.dt-btn--positive:hover {
+    background-color: var(--dt-positive-hover);
+    color: var(--dt-on-accent);
+}
+
+.dt-btn--positive:active {
+    background-color: var(--dt-positive-press);
+    color: var(--dt-on-accent);
+}
+
+.dt-btn--warning {
+    background-color: var(--dt-warning-strong);
+    color: var(--dt-on-warning);
+    min-width: 78px;
+}
+
+.dt-btn--warning:hover {
+    background-color: var(--dt-warning-hover);
+    color: var(--dt-on-warning);
+}
+
+.dt-btn--warning:active {
+    background-color: var(--dt-warning-press);
+    color: var(--dt-on-warning);
+}
+
+.dt-card .dt-btn--danger {
+    min-width: 78px;
+}
+
+/* icon + text inside one button (the text is a child Label so both line up) */
+.dt-btn--with-icon {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding: 0 14px 0 12px;
+}
+
+.dt-btn--with-icon .dt-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+}
+
+.dt-btn__text {
+    margin: 0;
+    padding: 0;
+    font-size: var(--dt-font-body);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.dt-btn--primary .dt-btn__text,
+.dt-btn--positive .dt-btn__text,
+.dt-btn--danger .dt-btn__text,
+.dt-btn--positive .dt-icon,
+.dt-btn--danger .dt-icon {
+    color: var(--dt-on-accent);
+}
+
+.dt-btn--warning .dt-btn__text,
+.dt-btn--warning .dt-icon {
+    color: var(--dt-on-warning);
+}
+
 .dt-btn--stepper {
     width: var(--dt-touch);
     padding: 0;
@@ -960,4 +1038,144 @@
 
 .dt-compact .dt-section {
     margin-top: 8px;
+}
+
+/* ---- quick card (beside the DEV pill) --------------------------------------------------------------------------- */
+
+.dt-quick {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 272px;
+    padding: 10px;
+    background-color: var(--dt-bg);
+    border-width: 1px;
+    border-color: var(--dt-border-strong);
+    border-radius: var(--dt-radius-panel);
+}
+
+.dt-quick__row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.dt-quick__level {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 56px;
+    margin: 0 6px;
+}
+
+.dt-quick__level .unity-base-text-field__input {
+    -unity-text-align: middle-center;
+    font-size: var(--dt-font-label);
+    -unity-font-style: bold;
+}
+
+.dt-btn--quick-step {
+    width: var(--dt-touch);
+    padding: 0;
+    background-color: var(--dt-surface-2);
+}
+
+.dt-btn--quick-go {
+    min-width: 56px;
+    margin-left: 6px;
+    padding: 0 10px;
+}
+
+.dt-btn--quick-match {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 0;
+    margin: 0 3px;
+    padding: 0 8px;
+}
+
+.dt-btn--quick-match .dt-icon {
+    margin-right: 4px;
+}
+
+.dt-btn--quick-shortcut {
+    margin-bottom: 6px;
+    justify-content: flex-start;
+    padding: 0 14px;
+}
+
+/* a neutral shortcut on the card is a quiet surface button: only styled commands (win / lose...) carry color */
+.dt-btn--quick-shortcut.dt-btn--primary {
+    background-color: var(--dt-surface-2);
+}
+
+.dt-btn--quick-shortcut.dt-btn--primary:hover {
+    background-color: var(--dt-surface-3);
+}
+
+.dt-btn--quick-shortcut.dt-btn--primary .dt-btn__text {
+    color: var(--dt-text);
+    -unity-font-style: normal;
+}
+
+.dt-quick__caption {
+    margin: 2px 2px 6px 2px;
+    font-size: var(--dt-font-caption);
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    color: var(--dt-text-3);
+    white-space: normal;
+}
+
+.dt-quick__toggle {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--dt-touch);
+    margin-bottom: 6px;
+    padding: 0 4px 0 12px;
+    background-color: var(--dt-surface);
+    border-radius: var(--dt-radius-control);
+}
+
+.dt-quick__toggle-text {
+    flex-shrink: 1;
+    margin: 0;
+    font-size: var(--dt-font-body);
+    color: var(--dt-text);
+}
+
+.dt-quick__result {
+    margin: 2px 2px 8px 2px;
+    font-size: var(--dt-font-small);
+    color: var(--dt-positive);
+    white-space: normal;
+}
+
+.dt-quick__result--error {
+    color: var(--dt-danger);
+}
+
+.dt-quick__footer {
+    flex-direction: row;
+    align-items: center;
+    padding-top: 8px;
+    border-top-width: 1px;
+    border-color: var(--dt-border);
+}
+
+.dt-btn--quick-all {
+    flex-grow: 1;
+    margin-right: 6px;
+    background-color: var(--dt-surface-2);
+    color: var(--dt-text);
+}
+
+.dt-compact .dt-quick {
+    width: 300px;
+    padding: 8px;
+}
+
+/* a disabled (blocked) quick button fades instead of disappearing, so the card keeps its shape */
+.dt-quick .dt-btn:disabled {
+    opacity: 0.35;
 }

@@ -4,6 +4,19 @@
 
 ## [Unreleased]
 
+### Added
+- **Thẻ nhanh** cạnh viên DEV (chạm để mở): ‹ level ›, ô level + Go, Win / Lose / Restart, lệnh gắn sao không tham số, nút **All tools** mở panel. Mở về phía giữa màn hình, luôn nằm trong vùng an toàn. `DevToolsSettings.PillTap` chọn thẻ nhanh hoặc panel; `DevToolsHud.ShowQuickCard` / `IsQuickCardOpen`; lệnh `hud.quick-card`.
+- Viên DEV **tự dính mép** trái / phải khi thả (`PillSnapToEdge`, mặc định bật).
+- **`DevCommandStyle`** (`Positive` / `Danger` / `Warning`) tô màu và icon nút Run; lệnh `Confirm` chưa đặt kiểu hiện Danger. `DevCommand.With(quick, confirm, style)`. Win / Lose / Restart chuẩn đã có kiểu.
+- Module **Info**: build, thiết bị, màn hình, phiên, scene, đường dẫn; **Copy report** chép toàn bộ (kèm mọi watch) vào clipboard; **Log report**.
+- Module **Creative**: ẩn toàn bộ UI game (canvas + UIDocument), ẩn một canvas theo tên, ẩn viên DEV; chỉ khôi phục đúng những gì đã ẩn. `DevCreative.AddGroup(name, targets)` cho game đặt tên nhóm UI.
+- HUD đã ẩn: **chạm nhanh 3 lần góc trên-trái** để hiện lại (`CornerTapsToShow`), bên cạnh cú chạm 3 ngón.
+- Icon mới: dấu tích, tải lại, mũi tên trái / phải, mở rộng.
+
+### Changed
+- Viên DEV và thẻ nhanh được đặt vị trí bằng `translate` thay vì `left` / `top`: không còn vòng lặp layout khi viên nằm sát mép phải.
+- Bản build smoke của demo bật Run In Background khi build (không đổi ProjectSettings), để smoke không đứng khi cửa sổ mất focus.
+
 ### Fixed
 - Chạm trên điện thoại không còn bị nhận nhầm là kéo: ngưỡng kéo theo DPI (~2.5 mm ngón tay, tối thiểu 8 px logic) cho thanh tab, danh sách và viên DEV; rung lệch trục huỷ cú kéo.
 - Danh sách không còn giật một đoạn bằng ngưỡng khi bắt đầu kéo; quán tính chỉ chạy với cú vuốt thật (900 px/s, thả trong 50 ms).

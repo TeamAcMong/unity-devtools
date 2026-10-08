@@ -259,6 +259,11 @@ namespace DreamTech.DevTools.Unity
 				DevToolsHud.PillExpanded = a.Bool(0);
 				return DevResult.Success("pill " + (DevToolsHud.PillExpanded ? "expanded (fps + pinned watches)" : "compact (fps)"));
 			}, "Same as a long-press on the DEV pill.");
+			r.Action(Cat, "Quick card", new[] { DevParam.Bool("show", true) }, a =>
+			{
+				DevToolsHud.ShowQuickCard(a.Bool(0));
+				return DevResult.Success("quick card " + (DevToolsHud.IsQuickCardOpen ? "shown" : "hidden"));
+			}, "Same as a tap on the DEV pill: the card with level, win / lose / restart and starred commands.");
 			r.Action(Cat, "Hide HUD", () =>
 			{
 				DevToolsHud.SetHidden(true);

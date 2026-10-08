@@ -46,6 +46,7 @@ namespace DreamTech.DevTools.Tests
 			DevTools.Registry.Remove(_owner);
 			DevToolsHud.PillExpanded = false;
 			DevToolsHud.Open(false);
+			DevToolsHud.ShowQuickCard(false);
 			PlayerPrefs.DeleteKey(DevToolsKeys.HudPill);
 			DevToolsHost.ClearLogs();
 			if (_eventSystem != null) Object.Destroy(_eventSystem);
@@ -88,12 +89,15 @@ namespace DreamTech.DevTools.Tests
 		static bool IsShown(string name) => Pill().Q(name).resolvedStyle.display != DisplayStyle.None;
 
 		[UnityTest]
-		public IEnumerator TapOpensThePanel()
+		public IEnumerator TapOpensTheQuickCardAndASecondTapClosesIt()
 		{
 			var pill = Pill();
 			yield return Hold(pill, 0.05f);
-			Assert.IsTrue(DevToolsHud.IsOpen, "a short tap must open the panel");
+			Assert.IsTrue(DevToolsHud.IsQuickCardOpen, "a short tap must open the quick card");
+			Assert.IsFalse(DevToolsHud.IsOpen, "the full panel stays closed");
 			Assert.IsFalse(DevToolsHud.PillExpanded);
+			yield return Hold(pill, 0.05f);
+			Assert.IsFalse(DevToolsHud.IsQuickCardOpen, "tapping the pill again closes the card");
 		}
 
 		[UnityTest]
@@ -140,6 +144,22 @@ namespace DreamTech.DevTools.Tests
 			Assert.Greater((after - before).magnitude, 30f, "the pill must follow the finger");
 			Assert.IsFalse(DevToolsHud.PillExpanded, "a drag must not toggle the mode");
 			Assert.IsFalse(DevToolsHud.IsOpen, "a drag must not open the panel");
+			Assert.IsFalse(DevToolsHud.IsQuickCardOpen, "a drag must not open the quick card");
+		}
+
+		[UnityTest]
+		public IEnumerator AfterADragThePillSlidesToTheNearerSideEdge()
+		{
+			var pill = Pill();
+			Vector2 from = pill.worldBound.center;
+			// drag it well into the right half: it must end on the right edge
+			Vector2 to = new Vector2(Root().worldBound.width * 0.7f, from.y + 20f);
+			Send<PointerDownEvent>(pill, from);
+			for (int i = 1; i <= 8; i++) Send<PointerMoveEvent>(pill, Vector2.Lerp(from, to, i / 8f));
+			Send<PointerUpEvent>(pill, to);
+			yield return new WaitForSecondsRealtime(0.4f);
+			float rightGap = Root().worldBound.xMax - pill.worldBound.xMax;
+			Assert.Less(rightGap, Root().worldBound.width * 0.1f, "the pill must end at the right edge (gap " + rightGap + ")");
 		}
 
 		[UnityTest]

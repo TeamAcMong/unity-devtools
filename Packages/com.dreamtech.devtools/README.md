@@ -115,6 +115,35 @@ console chỉ cần gõ phần đầu, miễn là phần đó không trùng vớ
 | Logs | số lỗi / cảnh báo (viên DEV chuyển sang đỏ khi có lỗi), `show-recent` kèm stack, `clear` |
 | HUD | mở panel ở một tab, đóng, ẩn toàn bộ, cỡ chữ, độ trong suốt |
 | Data | PlayerPrefs get / set / delete, mở thư mục dữ liệu, **xoá save ở lần khởi động sau** |
+| Creative | Dọn màn hình để quay / chụp: ẩn **toàn bộ UI game**, ẩn **một canvas** theo tên, ẩn chính viên DEV. Ẩn bằng `Canvas.enabled` (UI vẫn chạy tween / Update), hiện lại đúng những gì dev tools đã ẩn |
+| Info | Build, thiết bị, màn hình, phiên chơi, scene, đường dẫn dữ liệu; **Copy report** chép tất cả (kèm mọi giá trị sống của game) vào clipboard để dán vào ticket |
+
+### Viên DEV và thẻ nhanh
+
+- **Chạm** viên DEV: mở **thẻ nhanh** cạnh viên (‹ level ›, ô nhập level + Go, Win / Lose / Restart, các lệnh gắn sao
+  không cần tham số). Nút **All tools** mở panel đầy đủ. `PillTap = Panel` trong Settings để chạm là mở panel như cũ.
+- **Kéo**: thả tay thì viên trượt về mép trái / phải gần nhất (`PillSnapToEdge`). Thẻ nhanh mở về phía giữa màn hình.
+- **Giữ 0.5 s**: gọn (fps + huy hiệu lỗi) ↔ mở rộng (thêm các watch được ghim).
+- Đã ẩn toàn bộ HUD: **chạm nhanh 3 lần ở góc trên-trái** (`CornerTapsToShow`) hoặc chạm 3 ngón để hiện lại. Góc này chỉ
+  đọc input thô, không nuốt tap của nút game nằm ở đó.
+
+### Kiểu lệnh: màu theo ý nghĩa
+
+`DevCommandStyle` (`Positive` xanh lá ✓, `Danger` đỏ ✕, `Warning` cam ↻) tô nút Run của lệnh, để nhìn là biết, không phải
+đọc chữ. Lệnh có `Confirm` mà chưa đặt kiểu sẽ hiện màu Danger. Win / Lose / Restart chuẩn đã có kiểu sẵn.
+
+```csharp
+r.Action("Golden Race", "Reset data", ResetData).With(confirm: true);                    // đỏ, hỏi trước
+r.Action("Level", "Solve board", Solve).With(quick: true, style: DevCommandStyle.Positive); // xanh, có trong thẻ nhanh
+```
+
+### Nhóm UI của game cho tab Creative
+
+```csharp
+var handle = DevCreative.AddGroup("Top HUD", () => new Behaviour[] { topHudCanvas });  // thêm công tắc "Show Top HUD"
+// ...
+handle.Dispose(); // khi scene của nhóm đó unload
+```
 
 ### Đồng hồ: `DevClock`
 
@@ -174,6 +203,8 @@ mục dùng mặc định. Các mục:
 - Tiêu đề HUD.
 - Phím mở / ẩn (mặc định F1, `` ` `` và F2).
 - Số ngón của cú chạm ẩn/hiện HUD (mặc định 3).
+- Chạm viên DEV mở gì (`PillTap`: thẻ nhanh hoặc panel), viên tự dính mép (`PillSnapToEdge`), số lần chạm góc trên-trái
+  để hiện lại HUD đã ẩn (`CornerTapsToShow`, mặc định 3).
 - Ẩn HUD khi khởi động.
 - Ghi lệnh ra Console.
 - Boot script.

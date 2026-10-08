@@ -34,6 +34,12 @@ SCRIPT = [
     'hud.show-panel watch', 'wait 0.5', 'engine.screenshot true',
     'hud.show-panel console', 'wait 0.5', 'engine.screenshot true',
     'hud.close-panel', 'wait 0.4', 'engine.screenshot true',      # the DEV pill
+    'demo.start-level', 'hud.quick-card true', 'wait 0.5', 'engine.screenshot true',   # the quick card beside the pill
+    'hud.quick-card false',
+    'hud.show-panel level', 'wait 0.5', 'engine.screenshot true',     # styled win / lose / restart
+    'hud.show-panel creative', 'wait 0.5', 'engine.screenshot true',
+    'hud.show-panel info', 'wait 0.5', 'engine.screenshot true',
+    'hud.close-panel', 'wait 0.2',
     'engine.screenshot false',
     'wait 1', 'engine.quit',
 ]

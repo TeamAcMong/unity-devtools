@@ -20,13 +20,24 @@ namespace DreamTech.DevTools.Demo.EditorTools
 			PlayerSettings.defaultScreenWidth = 540;
 			PlayerSettings.defaultScreenHeight = 960;
 			PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
-			var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+			// the smoke player is launched while someone works in another window: without this it pauses unfocused and times out
+			bool runInBackground = PlayerSettings.runInBackground;
+			PlayerSettings.runInBackground = true;
+			BuildReport report;
+			try
 			{
-				scenes = new[] { DemoSceneBuilder.ScenePath },
-				locationPathName = Path.Combine(outDir, "DevToolsDemo.exe"),
-				target = BuildTarget.StandaloneWindows64,
-				options = BuildOptions.Development,
-			});
+				report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+				{
+					scenes = new[] { DemoSceneBuilder.ScenePath },
+					locationPathName = Path.Combine(outDir, "DevToolsDemo.exe"),
+					target = BuildTarget.StandaloneWindows64,
+					options = BuildOptions.Development,
+				});
+			}
+			finally
+			{
+				PlayerSettings.runInBackground = runInBackground;
+			}
 			Debug.Log("[DevTools Demo] build " + report.summary.result + " -> " + report.summary.outputPath);
 			if (Application.isBatchMode) EditorApplication.Exit(report.summary.result == BuildResult.Succeeded ? 0 : 3);
 		}
