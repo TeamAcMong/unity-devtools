@@ -50,6 +50,16 @@ namespace DreamTech.DevTools.Tests
 		}
 
 		[Test]
+		public void CategoryIcon_AcceptsKnownNamesOnly()
+		{
+			Assert.IsTrue(DevToolsHud.SetCategoryIcon("Golden Race", "trophy"));
+			Assert.IsTrue(DevToolsHud.SetCategoryIcon("Hearts", "Heart"), "case does not matter");
+			Assert.IsTrue(DevToolsHud.SetCategoryIcon("Daily", "list"), "list is an alias");
+			Assert.IsFalse(DevToolsHud.SetCategoryIcon("Golden Race", "rocket"));
+			Assert.IsFalse(DevToolsHud.SetCategoryIcon("", "trophy"));
+		}
+
+		[Test]
 		public void CornerTaps_CountOnlyQuickTapsInARow()
 		{
 			var counter = new CornerTapCounter();

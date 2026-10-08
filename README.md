@@ -120,6 +120,7 @@ console chỉ cần gõ phần đầu, miễn là phần đó không trùng vớ
 
 ### Viên DEV và thẻ nhanh
 
+- Viên DEV gọn là **quả bóng tròn** (icon thanh trượt, vòng đỏ + huy hiệu khi có lỗi); giữ 0.5 s để mở rộng ra fps + watch.
 - **Chạm** viên DEV: mở **thẻ nhanh** cạnh viên (‹ level ›, ô nhập level + Go, Win / Lose / Restart, các lệnh gắn sao
   không cần tham số). Nút **All tools** mở panel đầy đủ. `PillTap = Panel` trong Settings để chạm là mở panel như cũ.
 - **Kéo**: thả tay thì viên trượt về mép trái / phải gần nhất (`PillSnapToEdge`). Thẻ nhanh mở về phía giữa màn hình.
@@ -135,6 +136,13 @@ console chỉ cần gõ phần đầu, miễn là phần đó không trùng vớ
 ```csharp
 r.Action("Golden Race", "Reset data", ResetData).With(confirm: true);                    // đỏ, hỏi trước
 r.Action("Level", "Solve board", Solve).With(quick: true, style: DevCommandStyle.Positive); // xanh, có trong thẻ nhanh
+```
+
+### Icon cho nhóm lệnh của game
+
+```csharp
+DevToolsHud.SetCategoryIcon("Golden Race", "trophy"); // star flag coin play sliders list database clock terminal gear
+                                                       // image search info eye check reload trophy heart gift user cart
 ```
 
 ### Nhóm UI của game cho tab Creative

@@ -163,16 +163,21 @@ namespace DreamTech.DevTools.Tests
 		}
 
 		[UnityTest]
-		public IEnumerator CompactShowsOnlyTheFpsExpandedAddsTheWatches()
+		public IEnumerator CompactIsARoundBallExpandedShowsFpsAndTheWatches()
 		{
 			yield return new WaitForSecondsRealtime(0.6f);
-			Assert.IsTrue(Regex.IsMatch(TextOf("dt-pill-text"), @"^\d+$"), "compact pill text is just the fps number, got '" + TextOf("dt-pill-text") + "'");
+			Assert.IsTrue(Pill().ClassListContains("dt-pill--ball"), "compact is the round ball");
+			Assert.AreEqual(Pill().resolvedStyle.width, Pill().resolvedStyle.height, 0.5f, "the ball is round");
+			Assert.IsFalse(IsShown("dt-pill-text"), "the ball shows its icon, not the fps");
 			Assert.IsFalse(IsShown("dt-pill-detail"), "no watches in the compact pill");
 			Assert.IsFalse(IsShown("dt-pill-badge"), "no badge without errors");
 			float compactWidth = Pill().resolvedStyle.width;
 
 			DevToolsHud.PillExpanded = true;
 			yield return new WaitForSecondsRealtime(0.6f);
+			Assert.IsFalse(Pill().ClassListContains("dt-pill--ball"));
+			Assert.IsTrue(IsShown("dt-pill-text"), "the expanded pill shows the fps");
+			Assert.IsTrue(Regex.IsMatch(TextOf("dt-pill-text"), @"^\d+$"), "fps text is just the number, got '" + TextOf("dt-pill-text") + "'");
 			Assert.IsTrue(IsShown("dt-pill-detail"));
 			StringAssert.Contains("Level 12", TextOf("dt-pill-detail"));
 			Assert.Greater(Pill().resolvedStyle.width, compactWidth + 20f, "the expanded pill is wider");

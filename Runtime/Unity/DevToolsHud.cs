@@ -47,6 +47,7 @@ namespace DreamTech.DevTools.Unity
 			public const float PillLongPressSeconds = 0.5f;
 			public const float PillHoldCueSeconds = 0.15f;
 			public const float PillSnapSeconds = 0.18f;
+			public const float PillEdgeMargin = 6f;
 			public const float QuickGap = 8f;
 			public const int QuickMaxShortcuts = 6;
 			public const float CornerTapSeconds = 1.5f;

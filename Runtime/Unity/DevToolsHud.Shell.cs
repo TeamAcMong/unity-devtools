@@ -13,10 +13,10 @@ namespace DreamTech.DevTools.Unity
 	{
 		UIDocument _document;
 		PanelSettings _panelSettings;
-		VisualElement _root, _panelElement, _pill, _pillDot, _searchSlot, _searchBox, _consoleRow;
+		VisualElement _root, _panelElement, _pill, _pillRing, _searchSlot, _searchBox, _consoleRow;
 		Label _title, _stats, _toast, _pillText, _pillDetail, _pillBadge, _searchPlaceholder;
 		Button _dockButton, _sizeButton, _closeButton, _searchClear;
-		DevIcon _dockIcon;
+		DevIcon _dockIcon, _pillIcon;
 		TextField _searchField;
 		ScrollView _tabs, _body;
 		readonly Dictionary<string, Button> _tabButtons = new Dictionary<string, Button>();
@@ -49,6 +49,53 @@ namespace DreamTech.DevTools.Unity
 		int _tabsCacheVersion = -1;
 
 		static string TabText(string tab) => tab == TabQuick ? "Quick" : tab;
+
+		/// <summary>Icons of the built-in categories and pages; games add theirs with <see cref="SetCategoryIcon"/>.</summary>
+		static readonly Dictionary<string, DevIcon.Shape> CategoryIcons = new Dictionary<string, DevIcon.Shape>(StringComparer.OrdinalIgnoreCase)
+		{
+			{ TabQuick, DevIcon.Shape.StarFilled },
+			{ "Level", DevIcon.Shape.Flag },
+			{ "Economy", DevIcon.Shape.Coin },
+			{ "Ads", DevIcon.Shape.Play },
+			{ "Remote config", DevIcon.Shape.Sliders },
+			{ "Experiments", DevIcon.Shape.ListLines },
+			{ "Save", DevIcon.Shape.Database },
+			{ "Data", DevIcon.Shape.Database },
+			{ "Time", DevIcon.Shape.Clock },
+			{ "Tools", DevIcon.Shape.Terminal },
+			{ "Engine", DevIcon.Shape.Gear },
+			{ "Logs", DevIcon.Shape.ListLines },
+			{ "HUD", DevIcon.Shape.Sliders },
+			{ "Creative", DevIcon.Shape.Image },
+			{ "Inspector", DevIcon.Shape.Search },
+			{ "Info", DevIcon.Shape.Info },
+			{ TabScenarios, DevIcon.Shape.Play },
+			{ TabWatch, DevIcon.Shape.Eye },
+			{ TabConsole, DevIcon.Shape.Terminal },
+			{ TabLog, DevIcon.Shape.ListLines },
+		};
+
+		/// <summary>
+		/// Icon of a game's own category (tab and section header). <paramref name="icon"/> is one of: star, flag, coin, play,
+		/// sliders, list, database, clock, terminal, gear, image, search, info, eye, check, reload, trophy, heart, gift, user,
+		/// cart. Returns false for an unknown name.
+		/// </summary>
+		public static bool SetCategoryIcon(string category, string icon)
+		{
+			string name = (icon ?? "").Replace("-", "").Replace(" ", "");
+			if (string.Equals(name, "star", StringComparison.OrdinalIgnoreCase)) name = nameof(DevIcon.Shape.StarFilled);
+			if (string.Equals(name, "list", StringComparison.OrdinalIgnoreCase)) name = nameof(DevIcon.Shape.ListLines);
+			if (string.IsNullOrEmpty(category) || !Enum.TryParse(name, true, out DevIcon.Shape shape)) return false;
+			CategoryIcons[category] = shape;
+			if (_instance != null)
+			{
+				_instance._tabsKey = "";
+				_instance._contentDirty = true;
+			}
+			return true;
+		}
+
+		static bool TryIconOf(string category, out DevIcon.Shape shape) => CategoryIcons.TryGetValue(category ?? "", out shape);
 
 		// ---- construction --------------------------------------------------------------------------------------------
 
@@ -126,9 +173,13 @@ namespace DreamTech.DevTools.Unity
 
 		void BuildPill()
 		{
-			_pillDot = new VisualElement { pickingMode = PickingMode.Ignore };
-			_pillDot.AddToClassList("dt-pill__dot");
-			_pill.Insert(0, _pillDot);
+			// compact = a round ball (AssistiveTouch-like): dark body, accent ring, sliders icon; expanded = a pill with fps + watches
+			_pillRing = new VisualElement { pickingMode = PickingMode.Ignore };
+			_pillRing.AddToClassList("dt-pill__ring");
+			_pill.Insert(0, _pillRing);
+			_pillIcon = new DevIcon(DevIcon.Shape.Sliders);
+			_pillIcon.AddToClassList("dt-pill__icon");
+			_pill.Insert(1, _pillIcon);
 			_pillText.pickingMode = PickingMode.Ignore;
 			_pillDetail = new Label { name = "dt-pill-detail", pickingMode = PickingMode.Ignore };
 			_pillDetail.AddToClassList("dt-pill__detail");
@@ -136,8 +187,8 @@ namespace DreamTech.DevTools.Unity
 			_pillBadge = new Label { name = "dt-pill-badge", pickingMode = PickingMode.Ignore };
 			_pillBadge.AddToClassList("dt-pill__badge");
 			_pill.Add(_pillBadge);
-			Show(_pillDetail, _pillExpanded);
 			Show(_pillBadge, false);
+			ApplyPillMode();
 			// the pill grows and shrinks with its content: keep it inside the safe area
 			_pill.RegisterCallback<GeometryChangedEvent>(_ => PlacePill());
 			_pill.RegisterCallback<PointerDownEvent>(e =>
@@ -148,6 +199,7 @@ namespace DreamTech.DevTools.Unity
 				_pillPressedAt = Time.unscaledTime;
 				_pillPressPosition = e.position;
 				_pillGrab = (Vector2)e.position - _pillRect.position;
+				_pill.AddToClassList("dt-pill--pressed"); // sinks a little under the finger
 				_pill.CapturePointer(e.pointerId);
 				e.StopPropagation();
 			});
@@ -157,12 +209,14 @@ namespace DreamTech.DevTools.Unity
 				if (!_pillDragging && !_pillLongPressed && ((Vector2)e.position - _pillPressPosition).magnitude > DragScrollManipulator.TouchSlop(_pill, Tuning.PillDragThreshold)) _pillDragging = true;
 				if (!_pillDragging) return;
 				_pill.RemoveFromClassList("dt-pill--holding");
+				_pill.RemoveFromClassList("dt-pill--pressed");
 				_pillSnapStart = -1f;
 				CloseQuick(); // the card is anchored to the pill: it would hang in the air while the pill moves
 				Vector2 topLeft = (Vector2)e.position - _pillGrab;
-				float freeX = Mathf.Max(1f, _safeLogical.width - _pill.resolvedStyle.width);
-				float freeY = Mathf.Max(1f, _safeLogical.height - _pill.resolvedStyle.height);
-				_pillPosition = new Vector2(Mathf.Clamp01((topLeft.x - _safeLogical.x) / freeX), Mathf.Clamp01((topLeft.y - _safeLogical.y) / freeY));
+				float margin = Tuning.PillEdgeMargin; // same mapping as PlacePill
+				float freeX = Mathf.Max(1f, _safeLogical.width - _pill.resolvedStyle.width - margin * 2f);
+				float freeY = Mathf.Max(1f, _safeLogical.height - _pill.resolvedStyle.height - margin * 2f);
+				_pillPosition = new Vector2(Mathf.Clamp01((topLeft.x - _safeLogical.x - margin) / freeX), Mathf.Clamp01((topLeft.y - _safeLogical.y - margin) / freeY));
 				e.StopPropagation();
 			});
 			_pill.RegisterCallback<PointerUpEvent>(e =>
@@ -171,6 +225,7 @@ namespace DreamTech.DevTools.Unity
 				_pillPressed = false;
 				if (_pill.HasPointerCapture(e.pointerId)) _pill.ReleasePointer(e.pointerId);
 				_pill.RemoveFromClassList("dt-pill--holding");
+				_pill.RemoveFromClassList("dt-pill--pressed");
 				if (_pillDragging)
 				{
 					if (_settings.PillSnapToEdge) StartPillSnap();
@@ -187,6 +242,7 @@ namespace DreamTech.DevTools.Unity
 				_pillDragging = false;
 				_pillLongPressed = false;
 				_pill.RemoveFromClassList("dt-pill--holding");
+				_pill.RemoveFromClassList("dt-pill--pressed");
 			});
 		}
 
@@ -228,6 +284,7 @@ namespace DreamTech.DevTools.Unity
 				_pillLongPressed = true;
 				SetPillExpanded(!_pillExpanded);
 				_pill.RemoveFromClassList("dt-pill--holding");
+				_pill.RemoveFromClassList("dt-pill--pressed");
 			}
 			else if (held >= Tuning.PillHoldCueSeconds) _pill.AddToClassList("dt-pill--holding");
 		}
@@ -237,8 +294,18 @@ namespace DreamTech.DevTools.Unity
 			if (_pillExpanded == expanded) return;
 			_pillExpanded = expanded;
 			PlayerPrefs.SetInt(DevToolsKeys.HudPillExpanded, expanded ? 1 : 0);
-			if (_pillDetail != null) Show(_pillDetail, expanded);
+			ApplyPillMode();
 			_nextRefresh = 0f; // refill the texts now
+		}
+
+		/// <summary>Ball (compact: icon only, the error badge on its corner) or pill (expanded: icon, fps, pinned watches, badge).</summary>
+		void ApplyPillMode()
+		{
+			if (_pill == null) return;
+			_pill.EnableInClassList("dt-pill--ball", !_pillExpanded);
+			Show(_pillRing, !_pillExpanded);
+			Show(_pillText, _pillExpanded);
+			if (!_pillExpanded) Show(_pillDetail, false);
 		}
 
 		/// <summary>Pill position from its stored fraction of the free safe-area space (so a width change cannot push it off screen).</summary>
@@ -247,8 +314,10 @@ namespace DreamTech.DevTools.Unity
 			if (_pill == null || _open) return;
 			float width = float.IsNaN(_pill.resolvedStyle.width) ? 100f : _pill.resolvedStyle.width;
 			float height = float.IsNaN(_pill.resolvedStyle.height) ? 34f : _pill.resolvedStyle.height;
-			float x = _safeLogical.x + _pillPosition.x * Mathf.Max(0f, _safeLogical.width - width);
-			float y = _safeLogical.y + _pillPosition.y * Mathf.Max(0f, _safeLogical.height - height);
+			// a small gap from the screen edges, so the ball reads as floating rather than glued on
+			float margin = Tuning.PillEdgeMargin;
+			float x = _safeLogical.x + margin + _pillPosition.x * Mathf.Max(0f, _safeLogical.width - width - margin * 2f);
+			float y = _safeLogical.y + margin + _pillPosition.y * Mathf.Max(0f, _safeLogical.height - height - margin * 2f);
 			_pillRect = new Rect(x, y, width, height);
 			// moved by translate, not left / top: translate does not take part in layout, so neither a layout loop (an absolute
 			// element held by its left edge near the right edge shrinks, moves, shrinks...) nor a squeezed pill can happen
@@ -463,7 +532,7 @@ namespace DreamTech.DevTools.Unity
 					string tab = t;
 					var button = new Button(() => SelectTab(tab, true));
 					button.AddToClassList("dt-tab");
-					if (tab == TabQuick) button.Add(new DevIcon(DevIcon.Shape.StarFilled));
+					if (TryIconOf(tab, out var icon)) button.Add(new DevIcon(icon));
 					button.Add(new Label(TabText(tab)) { pickingMode = PickingMode.Ignore });
 					button.Q<Label>().AddToClassList("dt-tab__text");
 					_tabs.Add(button);

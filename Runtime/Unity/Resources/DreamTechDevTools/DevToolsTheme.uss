@@ -46,6 +46,11 @@
     --dt-radius-card: 12px;
     --dt-radius-control: 10px;
     --dt-radius-pill: 22px;
+    --dt-ball-size: 60px;
+    --dt-ball-radius: 30px;
+    --dt-ball-ring-radius: 23px;
+    --dt-ball-halo: rgba(76, 139, 255, 0.32);
+    --dt-ball-body: rgb(24, 28, 40);
     --dt-touch: 44px;
     --dt-gap: 8px;
     --dt-pad: 12px;
