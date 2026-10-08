@@ -2,7 +2,7 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), phiên bản theo [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [0.4.0] - 2026-10-08
 
 ### Added
 - **Thẻ nhanh** cạnh viên DEV (chạm để mở): ‹ level ›, ô level + Go, Win / Lose / Restart, lệnh gắn sao không tham số, nút **All tools** mở panel. Mở về phía giữa màn hình, luôn nằm trong vùng an toàn. `DevToolsSettings.PillTap` chọn thẻ nhanh hoặc panel; `DevToolsHud.ShowQuickCard` / `IsQuickCardOpen`; lệnh `hud.quick-card`.
