@@ -913,27 +913,53 @@
     top: 0;
     flex-direction: row;
     align-items: center;
-    height: 34px;
-    padding: 0 12px 0 11px;
+    height: 40px;
+    padding: 0 12px 0 10px;
     background-color: var(--dt-bg);
-    border-width: 1px;
-    border-color: var(--dt-border-strong);
+    border-width: 2px;
+    border-color: var(--dt-accent-soft);
     border-radius: var(--dt-radius-pill);
-    opacity: 0.94;
+    opacity: 0.96;
     transition-property: scale, border-color, background-color;
     transition-duration: 0.12s;
 }
 
-.dt-pill__dot {
-    width: 10px;
-    height: 10px;
-    margin-right: 7px;
-    border-radius: 5px;
-    background-color: var(--dt-positive);
+/* compact: a round ball like AssistiveTouch. The wide soft border is the halo, the inner ring the accent rim. */
+.dt-pill--ball {
+    width: var(--dt-ball-size);
+    height: var(--dt-ball-size);
+    padding: 0;
+    justify-content: center;
+    border-width: 6px;
+    border-color: var(--dt-ball-halo);
+    border-radius: var(--dt-ball-radius);
+    background-color: var(--dt-ball-body);
+}
+
+.dt-pill__ring {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    right: 1px;
+    bottom: 1px;
+    border-width: 2px;
+    border-color: var(--dt-accent);
+    border-radius: var(--dt-ball-ring-radius);
+}
+
+.dt-pill__icon {
+    width: 18px;
+    height: 18px;
+    color: var(--dt-accent-hover);
+}
+
+.dt-pill--ball .dt-pill__icon {
+    width: 24px;
+    height: 24px;
 }
 
 .dt-pill__text {
-    margin: 0;
+    margin: 0 0 0 8px;
     padding: 0;
     font-size: var(--dt-font-body);
     -unity-font-style: bold;
@@ -965,16 +991,43 @@
     white-space: nowrap;
 }
 
+/* on the ball the badge sits on its top-right corner, like an app icon badge */
+.dt-pill--ball .dt-pill__badge {
+    position: absolute;
+    top: -9px;
+    right: -9px;
+    margin: 0;
+    border-width: 2px;
+    border-color: var(--dt-bg);
+}
+
 .dt-pill--error {
-    background-color: var(--dt-danger-solid);
+    border-color: rgba(255, 92, 98, 0.32);
+}
+
+.dt-pill--error .dt-pill__ring {
     border-color: var(--dt-danger);
 }
 
-/* the long-press cue: the pill swells and its rim lights up */
-.dt-pill--holding {
-    scale: 1.1 1.1;
-    border-color: var(--dt-warning);
+.dt-pill--error .dt-pill__icon {
+    color: var(--dt-danger-hover);
+}
+
+/* pressed: sinks a little */
+.dt-pill--pressed {
+    scale: 0.92 0.92;
     opacity: 1;
+}
+
+/* the long-press cue: swells and the rim turns warm */
+.dt-pill--holding {
+    scale: 1.12 1.12;
+    border-color: rgba(255, 196, 64, 0.3);
+    opacity: 1;
+}
+
+.dt-pill--holding .dt-pill__ring {
+    border-color: var(--dt-warning);
 }
 
 /* ---- dropdown popup (added to the panel root) ------------------------------------------------------------------ */
@@ -1178,4 +1231,23 @@
 /* a disabled (blocked) quick button fades instead of disappearing, so the card keeps its shape */
 .dt-quick .dt-btn:disabled {
     opacity: 0.35;
+}
+
+/* quick card: fades and grows out of the ball's side (the origin is set from code) */
+.dt-quick {
+    transition-property: opacity, scale;
+    transition-duration: 0.16s;
+    transition-timing-function: ease-out-cubic;
+}
+
+.dt-quick--entering {
+    opacity: 0;
+    scale: 0.9 0.9;
+}
+
+.dt-section__icon {
+    width: 14px;
+    height: 14px;
+    margin-right: 7px;
+    color: var(--dt-accent-hover);
 }

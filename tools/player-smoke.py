@@ -34,6 +34,7 @@ SCRIPT = [
     'hud.show-panel watch', 'wait 0.5', 'engine.screenshot true',
     'hud.show-panel console', 'wait 0.5', 'engine.screenshot true',
     'hud.close-panel', 'wait 0.4', 'engine.screenshot true',      # the DEV pill
+    'hud.pill-expanded false', 'wait 0.4', 'engine.screenshot true',  # the compact DEV ball
     'demo.start-level', 'hud.quick-card true', 'wait 0.5', 'engine.screenshot true',   # the quick card beside the pill
     'hud.quick-card false',
     'hud.show-panel level', 'wait 0.5', 'engine.screenshot true',     # styled win / lose / restart

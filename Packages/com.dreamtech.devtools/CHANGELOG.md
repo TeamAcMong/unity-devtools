@@ -12,6 +12,9 @@
 - Module **Creative**: ẩn toàn bộ UI game (canvas + UIDocument), ẩn một canvas theo tên, ẩn viên DEV; chỉ khôi phục đúng những gì đã ẩn. `DevCreative.AddGroup(name, targets)` cho game đặt tên nhóm UI.
 - HUD đã ẩn: **chạm nhanh 3 lần góc trên-trái** để hiện lại (`CornerTapsToShow`), bên cạnh cú chạm 3 ngón.
 - Icon mới: dấu tích, tải lại, mũi tên trái / phải, mở rộng.
+- Viên DEV gọn thành **quả bóng tròn** kiểu AssistiveTouch: thân tối, quầng sáng, vòng màu nhấn, icon thanh trượt; lún khi bấm, đỏ + huy hiệu ở góc khi có lỗi; cách mép 6 px. Giữ 0.5 s vẫn mở rộng thành thanh (icon + fps + watch ghim).
+- Thẻ nhanh **phóng ra từ phía quả bóng** (mờ + phóng to, 0.16 s).
+- **Icon cho tab và tiêu đề nhóm** (cờ, xu, play, thanh trượt, đồng hồ, bánh răng, dữ liệu, ảnh, mắt, terminal, info, cúp, tim, quà, người, giỏ hàng); game đặt icon cho nhóm riêng bằng `DevToolsHud.SetCategoryIcon(category, "trophy")`.
 
 ### Changed
 - Viên DEV và thẻ nhanh được đặt vị trí bằng `translate` thay vì `left` / `top`: không còn vòng lặp layout khi viên nằm sát mép phải.

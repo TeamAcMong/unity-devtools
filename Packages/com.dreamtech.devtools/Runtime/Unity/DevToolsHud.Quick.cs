@@ -60,6 +60,9 @@ namespace DreamTech.DevTools.Unity
 			RefreshQuick();
 			Show(_quick, true);
 			PlaceQuick();
+			// grow out of the ball: start small and transparent, the USS transition does the rest next frame
+			_quick.AddToClassList("dt-quick--entering");
+			_quick.schedule.Execute(() => _quick.RemoveFromClassList("dt-quick--entering")).StartingIn(16);
 		}
 
 		void CloseQuick()
@@ -300,6 +303,12 @@ namespace DreamTech.DevTools.Unity
 				bool below = pill.center.y < area.center.y;
 				y = below ? pill.yMax + Tuning.QuickGap : pill.yMin - Tuning.QuickGap - height;
 			}
+			// the opening animation grows from the side that faces the ball
+			float originX = fitsBeside ? (pillOnLeft ? 0f : 100f) : 50f;
+			float originY = fitsBeside ? 50f : (pill.center.y < area.center.y ? 0f : 100f);
+			var origin = _quick.style.transformOrigin.value;
+			if (!Mathf.Approximately(origin.x.value, originX) || !Mathf.Approximately(origin.y.value, originY))
+				_quick.style.transformOrigin = new TransformOrigin(Length.Percent(originX), Length.Percent(originY), 0f);
 			x = Mathf.Clamp(x, area.xMin, Mathf.Max(area.xMin, area.xMax - width));
 			y = Mathf.Clamp(y, area.yMin, Mathf.Max(area.yMin, area.yMax - height));
 			SetTranslate(_quick, x, y);

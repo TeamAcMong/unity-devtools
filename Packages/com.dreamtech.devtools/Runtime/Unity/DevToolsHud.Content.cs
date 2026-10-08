@@ -109,7 +109,7 @@ namespace DreamTech.DevTools.Unity
 				if (c.Category != category)
 				{
 					category = c.Category;
-					AddSection(category.ToUpperInvariant());
+					AddSection(category.ToUpperInvariant(), category);
 				}
 				AddCard(c, searching);
 			}
@@ -385,10 +385,17 @@ namespace DreamTech.DevTools.Unity
 
 		// ---- small builders ------------------------------------------------------------------------------------------
 
-		void AddSection(string text)
+		/// <summary>Section header; <paramref name="category"/> (when the section is a category) adds its icon.</summary>
+		void AddSection(string text, string category = null)
 		{
 			var section = new VisualElement();
 			section.AddToClassList("dt-section");
+			if (category != null && TryIconOf(category, out var icon))
+			{
+				var glyph = new DevIcon(icon);
+				glyph.AddToClassList("dt-section__icon");
+				section.Add(glyph);
+			}
 			var label = new Label(text);
 			label.AddToClassList("dt-section__text");
 			var line = new VisualElement();
