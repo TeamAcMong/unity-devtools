@@ -48,6 +48,19 @@ namespace DreamTech.DevTools
 	}
 
 	/// <summary>
+	/// What running the command means, so front ends can color it at a glance (win green, lose red, reload orange)
+	/// instead of making the tester read every label.
+	/// </summary>
+	public enum DevCommandStyle
+	{
+		/// <summary>Neutral; a <see cref="DevCommand.Confirm"/> command is drawn as <see cref="Danger"/>.</summary>
+		Default,
+		Positive,
+		Danger,
+		Warning
+	}
+
+	/// <summary>
 	/// A dev action. Every front end (in-game HUD, editor window, scripts) runs the same objects through
 	/// <see cref="DevRegistry"/>, so a command added once is reachable everywhere.
 	/// Id = "&lt;category&gt;.&lt;label&gt;" slugged, e.g. "economy.set-balance"; a console line is "&lt;id&gt; arg arg..."
@@ -74,6 +87,21 @@ namespace DreamTech.DevTools
 
 		/// <summary>Front ends ask before running it (save wipe, reset...). Scripts do not ask.</summary>
 		public bool Confirm;
+
+		/// <summary>Color / icon of its button in the HUD.</summary>
+		public DevCommandStyle Style;
+
+		/// <summary>The style a front end draws: <see cref="Style"/>, or Danger for an unstyled command that asks first.</summary>
+		public DevCommandStyle EffectiveStyle => Style == DevCommandStyle.Default && Confirm ? DevCommandStyle.Danger : Style;
+
+		/// <summary>Sets the presentation flags in one expression: <c>r.Action(...).With(quick: true, style: DevCommandStyle.Positive)</c>.</summary>
+		public DevCommand With(bool? quick = null, bool? confirm = null, DevCommandStyle? style = null)
+		{
+			if (quick.HasValue) Quick = quick.Value;
+			if (confirm.HasValue) Confirm = confirm.Value;
+			if (style.HasValue) Style = style.Value;
+			return this;
+		}
 
 		/// <summary>Who registered it; <see cref="DevRegistry.Remove(object)"/> drops everything of an owner.</summary>
 		public object Owner;

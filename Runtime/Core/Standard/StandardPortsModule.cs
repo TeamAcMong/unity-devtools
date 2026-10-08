@@ -119,18 +119,18 @@ namespace DreamTech.DevTools
 				int level = p.CurrentLevel;
 				p.Win();
 				return DevResult.Success("win requested on level " + level);
-			}, "Victory through the normal result flow.", needPlaying).Quick = true;
+			}, "Victory through the normal result flow.", needPlaying).With(quick: true, style: DevCommandStyle.Positive);
 			r.Action(Level, "Lose", () =>
 			{
 				int level = p.CurrentLevel;
 				p.Lose();
 				return DevResult.Success("defeat requested on level " + level);
-			}, "Defeat through the normal flow (revive offers included).", needPlaying).Quick = true;
+			}, "Defeat through the normal flow (revive offers included).", needPlaying).With(quick: true, style: DevCommandStyle.Danger);
 			r.Action(Level, "Restart", () =>
 			{
 				p.Restart();
 				return DevResult.Success("restarted level " + p.CurrentLevel);
-			}, blocked: needPlaying);
+			}, blocked: needPlaying).With(style: DevCommandStyle.Warning);
 			r.Action(Level, "Jump to", new[] { DevParam.Int("level", 10) }, a =>
 			{
 				if (a.Int(0) < 1) return DevResult.Fail("level must be >= 1");

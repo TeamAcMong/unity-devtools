@@ -27,6 +27,34 @@ namespace DreamTech.DevTools.Unity
 #endif
 			}
 		}
+
+		/// <summary>A press (finger down / left mouse button down) that started this frame, in screen pixels (origin bottom-left).</summary>
+		public static bool TryGetPressThisFrame(out Vector2 screenPosition)
+		{
+#if ENABLE_LEGACY_INPUT_MANAGER
+			for (int i = 0; i < Input.touchCount; i++)
+			{
+				var touch = Input.GetTouch(i);
+				if (touch.phase != TouchPhase.Began) continue;
+				screenPosition = touch.position;
+				return true;
+			}
+			if (Input.GetMouseButtonDown(0))
+			{
+				screenPosition = Input.mousePosition;
+				return true;
+			}
+#elif DREAMTECH_DEVTOOLS_INPUTSYSTEM && ENABLE_INPUT_SYSTEM
+			var pointer = UnityEngine.InputSystem.Pointer.current;
+			if (pointer != null && pointer.press.wasPressedThisFrame)
+			{
+				screenPosition = pointer.position.ReadValue();
+				return true;
+			}
+#endif
+			screenPosition = default;
+			return false;
+		}
 	}
 }
 #endif

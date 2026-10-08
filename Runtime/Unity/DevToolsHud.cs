@@ -46,6 +46,11 @@ namespace DreamTech.DevTools.Unity
 			public const float PillDragThreshold = 6f;
 			public const float PillLongPressSeconds = 0.5f;
 			public const float PillHoldCueSeconds = 0.15f;
+			public const float PillSnapSeconds = 0.18f;
+			public const float QuickGap = 8f;
+			public const int QuickMaxShortcuts = 6;
+			public const float CornerTapSeconds = 1.5f;
+			public const float CornerTapRegion = 0.14f;
 			public const int PillBadgeMaxErrors = 99;
 			public const int ToastMaxCharacters = 110;
 			public const int PathTokenMinLength = 12;
@@ -117,7 +122,11 @@ namespace DreamTech.DevTools.Unity
 		{
 			if (_instance == null) return;
 			_instance._hidden = hidden;
-			if (hidden) _instance._open = false;
+			if (hidden)
+			{
+				_instance._open = false;
+				_instance.CloseQuick();
+			}
 			PlayerPrefs.SetInt(DevToolsKeys.HudHidden, hidden ? 1 : 0);
 		}
 
@@ -157,6 +166,7 @@ namespace DreamTech.DevTools.Unity
 			var h = _instance;
 			if (h == null || h._hidden || SuppressDrawing || h._root == null || h._root.panel == null) return false;
 			Vector2 p = RuntimePanelUtils.ScreenToPanel(h._root.panel, new Vector2(screen.x, Screen.height - screen.y));
+			if (h._quickOpen && h._quick != null && h._quick.resolvedStyle.display != DisplayStyle.None && h._quick.worldBound.Contains(p)) return true;
 			var element = h._open ? h._panelElement : h._pill;
 			return element != null && element.resolvedStyle.display != DisplayStyle.None && element.worldBound.Contains(p);
 		}
@@ -194,7 +204,9 @@ namespace DreamTech.DevTools.Unity
 		void OnExecuted(DevLogEntry e)
 		{
 			string full = e.Message.Length > 0 ? e.Message : e.Line;
-			ShowToast(ShortenForToast(full), e.Ok);
+			string shortened = ShortenForToast(full);
+			ShowToast(shortened, e.Ok);
+			if (_quickOpen) ShowQuickResult(shortened, e.Ok);
 			if (_commandBeingRun != null) Flash(_commandBeingRun, e.Ok);
 			_logDirty = true;
 		}
@@ -236,6 +248,7 @@ namespace DreamTech.DevTools.Unity
 			int touches = DevInput.TouchCount;
 			if (fingers > 0 && touches == fingers && _lastTouchCount < fingers) SetHidden(!_hidden);
 			_lastTouchCount = touches;
+			if (_hidden) TickCornerTaps();
 
 			// only what is on screen: pinned watches, plus the open tab's (all of them on the Watch tab), each at its own rate
 			float now = Time.realtimeSinceStartup;
@@ -251,6 +264,24 @@ namespace DreamTech.DevTools.Unity
 			}
 			UpdateUi();
 		}
+
+		/// <summary>
+		/// The way back once the HUD is hidden (e.g. for a clean video): N quick taps in the top-left corner. Reads raw input
+		/// and consumes nothing, so the game's own button in that corner still works.
+		/// </summary>
+		void TickCornerTaps()
+		{
+			int needed = _settings.CornerTapsToShow;
+			if (needed <= 0 || !DevInput.TryGetPressThisFrame(out Vector2 press)) return;
+			if (!CornerTapCounter.IsInCorner(press, Screen.width, Screen.height, Tuning.CornerTapRegion)) return;
+			if (_cornerTaps.Register(Time.unscaledTime, Tuning.CornerTapSeconds) >= needed)
+			{
+				_cornerTaps.Reset();
+				SetHidden(false);
+			}
+		}
+
+		readonly CornerTapCounter _cornerTaps = new CornerTapCounter();
 
 		// ---- keyboard (IMGUI events, so it works with either input backend) -------------------------------------------
 

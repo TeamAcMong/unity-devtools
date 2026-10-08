@@ -32,6 +32,16 @@ namespace DreamTech.DevTools.Unity
 			Detailed = 1,
 		}
 
+		/// <summary>What a tap on the DEV pill opens. Values are serialized by number: only append.</summary>
+		public enum PillTapKind
+		{
+			/// <summary>A small card beside the pill (level, win / lose / restart, starred commands) with a button to the full panel.</summary>
+			QuickCard = 0,
+
+			/// <summary>The full panel straight away.</summary>
+			Panel = 1,
+		}
+
 		[Header("Runtime")]
 		[Tooltip("Create the host and HUD automatically at startup (Editor, development builds, DREAMTECH_DEVTOOLS builds).")]
 		public bool AutoStart = true;
@@ -44,6 +54,16 @@ namespace DreamTech.DevTools.Unity
 
 		[Tooltip("Initial look of the DEV pill (Compact: fps + error badge; Detailed: also the pinned watches). A long-press on the pill toggles it and the choice is remembered on the device.")]
 		public PillStyleKind PillStyle = PillStyleKind.Compact;
+
+		[Tooltip("What a tap on the DEV pill opens: the quick card beside it (most used commands) or the full panel.")]
+		public PillTapKind PillTap = PillTapKind.QuickCard;
+
+		[Tooltip("After a drag the DEV pill slides to the nearest side edge, out of the play area.")]
+		public bool PillSnapToEdge = true;
+
+		[Tooltip("While the HUD is hidden, this many quick taps in the top-left corner bring it back (0 = off). Works next to the multi-finger tap.")]
+		[Range(0, 5)]
+		public int CornerTapsToShow = 3;
 
 		[Tooltip("Keys that open / close the panel (read from IMGUI events: works with either input backend).")]
 		public KeyCode[] OpenKeys = { KeyCode.F1, KeyCode.BackQuote };

@@ -25,7 +25,7 @@ namespace DreamTech.DevTools.Unity
 		bool _revealTab, _contentDirty = true, _logDirty, _wasOpen;
 		float _toastUntil, _nextRefresh;
 		bool _pillPressed, _pillDragging, _pillLongPressed;
-		float _pillPressedAt;
+		float _pillPressedAt, _pillSnapFrom, _pillSnapTarget, _pillSnapStart = -1f;
 		string _pillTextShown = "", _pillDetailShown = "", _pillBadgeShown = "";
 		readonly StringBuilder _pillBuilder = new StringBuilder(64);
 		Vector2 _pillPressPosition, _pillGrab;
@@ -147,7 +147,7 @@ namespace DreamTech.DevTools.Unity
 				_pillLongPressed = false;
 				_pillPressedAt = Time.unscaledTime;
 				_pillPressPosition = e.position;
-				_pillGrab = (Vector2)e.position - new Vector2(_pill.resolvedStyle.left, _pill.resolvedStyle.top);
+				_pillGrab = (Vector2)e.position - _pillRect.position;
 				_pill.CapturePointer(e.pointerId);
 				e.StopPropagation();
 			});
@@ -157,6 +157,8 @@ namespace DreamTech.DevTools.Unity
 				if (!_pillDragging && !_pillLongPressed && ((Vector2)e.position - _pillPressPosition).magnitude > DragScrollManipulator.TouchSlop(_pill, Tuning.PillDragThreshold)) _pillDragging = true;
 				if (!_pillDragging) return;
 				_pill.RemoveFromClassList("dt-pill--holding");
+				_pillSnapStart = -1f;
+				CloseQuick(); // the card is anchored to the pill: it would hang in the air while the pill moves
 				Vector2 topLeft = (Vector2)e.position - _pillGrab;
 				float freeX = Mathf.Max(1f, _safeLogical.width - _pill.resolvedStyle.width);
 				float freeY = Mathf.Max(1f, _safeLogical.height - _pill.resolvedStyle.height);
@@ -169,8 +171,12 @@ namespace DreamTech.DevTools.Unity
 				_pillPressed = false;
 				if (_pill.HasPointerCapture(e.pointerId)) _pill.ReleasePointer(e.pointerId);
 				_pill.RemoveFromClassList("dt-pill--holding");
-				if (_pillDragging) PlayerPrefs.SetString(DevToolsKeys.HudPill, _pillPosition.x.ToString("0.###", Inv) + "," + _pillPosition.y.ToString("0.###", Inv));
-				else if (!_pillLongPressed) Open(true); // a long-press already did its job: releasing must not also open the panel
+				if (_pillDragging)
+				{
+					if (_settings.PillSnapToEdge) StartPillSnap();
+					SavePillPosition();
+				}
+				else if (!_pillLongPressed) TapPill(); // a long-press already did its job: releasing must not also open anything
 				_pillDragging = false;
 				_pillLongPressed = false;
 				e.StopPropagation();
@@ -182,6 +188,34 @@ namespace DreamTech.DevTools.Unity
 				_pillLongPressed = false;
 				_pill.RemoveFromClassList("dt-pill--holding");
 			});
+		}
+
+		void TapPill()
+		{
+			if (_settings.PillTap == DevToolsSettings.PillTapKind.Panel) Open(true);
+			else if (_quickOpen) CloseQuick();
+			else OpenQuick();
+		}
+
+		void SavePillPosition() =>
+			PlayerPrefs.SetString(DevToolsKeys.HudPill, (_pillSnapStart >= 0f ? _pillSnapTarget : _pillPosition.x).ToString("0.###", Inv) + "," + _pillPosition.y.ToString("0.###", Inv));
+
+		/// <summary>Like AssistiveTouch: after a drag the pill slides to the nearer side edge, out of the play area.</summary>
+		void StartPillSnap()
+		{
+			_pillSnapFrom = _pillPosition.x;
+			_pillSnapTarget = _pillPosition.x < 0.5f ? 0f : 1f;
+			_pillSnapStart = Time.unscaledTime;
+		}
+
+		/// <summary>Every frame while a snap runs: ease-out on unscaled time (the game may be paused or slowed).</summary>
+		void TickPillSnap()
+		{
+			if (_pillSnapStart < 0f) return;
+			float t = Mathf.Clamp01((Time.unscaledTime - _pillSnapStart) / Tuning.PillSnapSeconds);
+			float eased = 1f - (1f - t) * (1f - t);
+			_pillPosition.x = Mathf.Lerp(_pillSnapFrom, _pillSnapTarget, eased);
+			if (t >= 1f) _pillSnapStart = -1f;
 		}
 
 		/// <summary>Called every frame: the long-press fires on the clock, not on a pointer event (a held finger sends none).</summary>
@@ -213,8 +247,22 @@ namespace DreamTech.DevTools.Unity
 			if (_pill == null || _open) return;
 			float width = float.IsNaN(_pill.resolvedStyle.width) ? 100f : _pill.resolvedStyle.width;
 			float height = float.IsNaN(_pill.resolvedStyle.height) ? 34f : _pill.resolvedStyle.height;
-			_pill.style.left = _safeLogical.x + _pillPosition.x * Mathf.Max(0f, _safeLogical.width - width);
-			_pill.style.top = _safeLogical.y + _pillPosition.y * Mathf.Max(0f, _safeLogical.height - height);
+			float x = _safeLogical.x + _pillPosition.x * Mathf.Max(0f, _safeLogical.width - width);
+			float y = _safeLogical.y + _pillPosition.y * Mathf.Max(0f, _safeLogical.height - height);
+			_pillRect = new Rect(x, y, width, height);
+			// moved by translate, not left / top: translate does not take part in layout, so neither a layout loop (an absolute
+			// element held by its left edge near the right edge shrinks, moves, shrinks...) nor a squeezed pill can happen
+			SetTranslate(_pill, x, y);
+		}
+
+		/// <summary>The pill's rectangle in panel coordinates (its layout stays at 0,0; the position is a translate).</summary>
+		Rect _pillRect;
+
+		static void SetTranslate(VisualElement element, float x, float y)
+		{
+			var current = element.style.translate.value;
+			if (Mathf.Approximately(current.x.value, x) && Mathf.Approximately(current.y.value, y) && element.style.translate.keyword == StyleKeyword.Undefined) return;
+			element.style.translate = new Translate(new Length(x), new Length(y), 0f);
 		}
 
 		/// <summary>Search box: icon, field, placeholder and a clear button, all in one rounded container.</summary>
@@ -283,10 +331,13 @@ namespace DreamTech.DevTools.Unity
 			Show(_root, visible);
 			if (!visible) return;
 			bool panelOn = _open;
+			if (panelOn && _quickOpen) CloseQuick();
 			Show(_panelElement, panelOn);
 			Show(_pill, !panelOn);
+			TickPillSnap();
 			ApplyLayout();
 			TickPillHold();
+			if (_quickOpen) TickQuick();
 
 			if (panelOn)
 			{
@@ -308,6 +359,7 @@ namespace DreamTech.DevTools.Unity
 				_nextRefresh = Time.unscaledTime + Tuning.RefreshSeconds;
 				RefreshStats();
 				if (panelOn) RefreshDynamic();
+				else if (_quickOpen) RefreshQuick();
 			}
 			if (_toastUntil > 0f && Time.realtimeSinceStartup >= _toastUntil)
 			{

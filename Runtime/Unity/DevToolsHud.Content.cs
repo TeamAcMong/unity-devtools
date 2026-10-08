@@ -413,6 +413,48 @@ namespace DreamTech.DevTools.Unity
 			return button;
 		}
 
+		/// <summary>USS modifier of a command button: the style decides the color, so Win reads green and Lose red at a glance.</summary>
+		static string StyleClass(DevCommandStyle style)
+		{
+			switch (style)
+			{
+				case DevCommandStyle.Positive: return "dt-btn--positive";
+				case DevCommandStyle.Danger: return "dt-btn--danger";
+				case DevCommandStyle.Warning: return "dt-btn--warning";
+				default: return "dt-btn--primary";
+			}
+		}
+
+		/// <summary>Icon of a styled command (none for the neutral style: "Run" alone says it).</summary>
+		static DevIcon.Shape? StyleIcon(DevCommandStyle style)
+		{
+			switch (style)
+			{
+				case DevCommandStyle.Positive: return DevIcon.Shape.Check;
+				case DevCommandStyle.Danger: return DevIcon.Shape.Close;
+				case DevCommandStyle.Warning: return DevIcon.Shape.Reload;
+				default: return null;
+			}
+		}
+
+		/// <summary>A command's action button: style color, optional style icon, then the text (icon and text are children, so they line up).</summary>
+		static Button MakeCommandButton(DevCommandStyle style, string text, Action onClick)
+		{
+			var button = new Button(onClick);
+			button.AddToClassList("dt-btn");
+			button.AddToClassList(StyleClass(style));
+			button.AddToClassList("dt-btn--with-icon"); // a row centred on both axes, with or without the icon
+			var icon = StyleIcon(style);
+			if (icon.HasValue) button.Add(new DevIcon(icon.Value));
+			if (!string.IsNullOrEmpty(text))
+			{
+				var label = new Label(text) { pickingMode = PickingMode.Ignore };
+				label.AddToClassList("dt-btn__text");
+				button.Add(label);
+			}
+			return button;
+		}
+
 		static Button MakeIconButton(DevIcon.Shape shape, Action onClick, string variant = "dt-btn--icon")
 		{
 			var button = new Button(onClick);
@@ -505,7 +547,7 @@ namespace DreamTech.DevTools.Unity
 			}
 			else
 			{
-				card.Run = MakeButton("Run", "dt-btn--primary", () => Ask(card));
+				card.Run = MakeCommandButton(c.EffectiveStyle, "Run", () => Ask(card));
 				actions.Add(card.Run);
 			}
 			top.Add(actions);

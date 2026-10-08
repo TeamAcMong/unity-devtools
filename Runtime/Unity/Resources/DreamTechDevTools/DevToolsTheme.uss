@@ -27,7 +27,14 @@
     --dt-danger-hover: rgb(255, 122, 126);
     --dt-danger-soft: rgba(255, 92, 98, 0.16);
     --dt-danger-solid: rgb(68, 26, 31);
+    --dt-positive-hover: rgb(78, 216, 146);
+    --dt-positive-press: rgb(38, 168, 102);
+    --dt-danger-press: rgb(224, 70, 76);
     --dt-warning: rgb(255, 196, 64);
+    --dt-warning-strong: rgb(255, 159, 10);
+    --dt-warning-hover: rgb(255, 180, 64);
+    --dt-warning-press: rgb(230, 138, 0);
+    --dt-on-warning: rgb(30, 22, 6);
 
     /* text */
     --dt-text: rgb(236, 239, 247);
