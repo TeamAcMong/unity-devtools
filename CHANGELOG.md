@@ -2,7 +2,7 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), phiên bản theo [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [0.4.1] - 2026-10-09
 
 ### Fixed
 - **Điện thoại: chạm bị nhận thành kéo và danh sách nhảy lung tung.** `ScrollView` của UI Toolkit tự kéo cảm ứng từ ~10 px, kể cả khi đang đè lên một nút, nằm gọn trong độ rung của một cú chạm (ngưỡng của HUD ~20 px theo DPI), rồi hai cơ chế cùng cuộn nên nội dung giật. Thanh tab và danh sách giờ dùng **`DevScrollView`** tự viết (khung cắt + nội dung dịch bằng translate + lăn chuột + thanh vị trí), không có kéo cảm ứng riêng: chỉ còn `DragScrollManipulator`.
