@@ -9,11 +9,9 @@
                 <ui:Button name="dt-size" class="dt-btn dt-btn--icon" tooltip="Panel height: S / M / L" />
                 <ui:Button name="dt-close" class="dt-btn dt-btn--icon" tooltip="Close (the DEV pill stays)" />
             </ui:VisualElement>
-            <ui:ScrollView name="dt-tabs" class="dt-tabs" mode="Horizontal" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" touch-scroll-type="Clamped" />
+            <ui:VisualElement name="dt-tabs-wrap" class="dt-tabs-wrap" />
             <ui:VisualElement name="dt-search-slot" class="dt-slot" />
-            <ui:VisualElement name="dt-body-wrap" class="dt-body-wrap">
-                <ui:ScrollView name="dt-body" class="dt-body" mode="Vertical" horizontal-scroller-visibility="Hidden" touch-scroll-type="Clamped" />
-            </ui:VisualElement>
+            <ui:VisualElement name="dt-body-wrap" class="dt-body-wrap" />
             <ui:Label name="dt-toast" class="dt-toast" />
         </ui:VisualElement>
         <ui:VisualElement name="dt-pill" class="dt-pill">

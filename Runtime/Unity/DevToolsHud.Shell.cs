@@ -18,7 +18,7 @@ namespace DreamTech.DevTools.Unity
 		Button _dockButton, _sizeButton, _closeButton, _searchClear;
 		DevIcon _dockIcon, _pillIcon;
 		TextField _searchField;
-		ScrollView _tabs, _body;
+		DevScrollView _tabs, _body;
 		readonly Dictionary<string, Button> _tabButtons = new Dictionary<string, Button>();
 		readonly List<string> _tabsCache = new List<string>();
 		string _tabsKey = "";
@@ -132,16 +132,18 @@ namespace DreamTech.DevTools.Unity
 			_dockButton = _root.Q<Button>("dt-dock");
 			_sizeButton = _root.Q<Button>("dt-size");
 			_closeButton = _root.Q<Button>("dt-close");
-			_tabs = _root.Q<ScrollView>("dt-tabs");
 			_searchSlot = _root.Q("dt-search-slot");
-			_body = _root.Q<ScrollView>("dt-body");
 			_toast = _root.Q<Label>("dt-toast");
 			_pillText = _root.Q<Label>("dt-pill-text");
-			// the built-in ScrollView drag only handles pointers typed as touch, and a pressed child button swallows the drag
-			_tabs.touchScrollBehavior = ScrollView.TouchScrollBehavior.Clamped;
-			_body.touchScrollBehavior = ScrollView.TouchScrollBehavior.Clamped;
-			_tabs.AddManipulator(new DragScrollManipulator(true));
-			_body.AddManipulator(new DragScrollManipulator(false));
+			// our own scroll containers, not UI Toolkit's ScrollView (its built-in touch scrolling fights the drag: see DevScrollView)
+			_tabs = new DevScrollView(true) { name = "dt-tabs" };
+			_tabs.AddToClassList("dt-tabs");
+			_root.Q("dt-tabs-wrap").Add(_tabs);
+			_tabs.AddManipulator(new DragScrollManipulator(_tabs));
+			_body = new DevScrollView(false) { name = "dt-body" };
+			_body.AddToClassList("dt-body");
+			_root.Q("dt-body-wrap").Add(_body);
+			_body.AddManipulator(new DragScrollManipulator(_body));
 
 			_title.text = string.IsNullOrEmpty(_settings.Title) ? "DevTools" : _settings.Title;
 			BuildHeader();
@@ -546,7 +548,7 @@ namespace DreamTech.DevTools.Unity
 				_revealTab = false;
 				_tabs.schedule.Execute(() =>
 				{
-					float viewport = _tabs.contentViewport.resolvedStyle.width;
+					float viewport = _tabs.Viewport.resolvedStyle.width;
 					if (float.IsNaN(viewport) || viewport < 1f) return;
 					float target = selected.layout.center.x - viewport * 0.5f;
 					_tabs.scrollOffset = new Vector2(Mathf.Max(0f, target), 0f);
