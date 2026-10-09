@@ -5,12 +5,11 @@ using UnityEngine.UIElements;
 namespace DreamTech.DevTools.Unity
 {
 	/// <summary>
-	/// Drag-to-scroll for a ScrollView with any pointer type (touch, mouse, pen). The built-in touch scrolling only handles
-	/// pointers reported as touch, and a child Button captures the pointer on press, so without this a finger drag that starts on
-	/// a tab or a Run button never scrolls. It listens in the trickle-down phase: once the pointer moved past
-	/// <see cref="DragThreshold"/> along the scroll axis it captures the pointer on the ScrollView (the Button's Clickable loses
-	/// the capture, so no click fires), sets the offset absolutely and stops the event so the built-in handling cannot add to it.
-	/// A press that does not move is left alone, so taps, dropdowns and text fields behave normally. Inertia uses unscaled time.
+	/// The one and only drag-to-scroll of a <see cref="DevScrollView"/>, for any pointer type (touch, mouse, pen). The HUD does not
+	/// use UI Toolkit's ScrollView: its own touch scrolling starts after ~10 px, even under a pressed button, which on a phone is
+	/// inside a tap's wobble, so it turned taps into drags and, running next to this one, made the content jump.
+	/// Below the DPI-based slop nothing moves, so taps, dropdowns and text fields behave normally; past it the pointer is captured
+	/// (the pressed child's click is cancelled) and the content follows the finger from that point. Inertia uses unscaled time.
 	/// </summary>
 	sealed class DragScrollManipulator : Manipulator
 	{
@@ -24,8 +23,12 @@ namespace DreamTech.DevTools.Unity
 		/// Drag threshold in logical panel pixels for this panel: the larger of <paramref name="minimumLogical"/> and ~2.5 mm of
 		/// finger travel converted through the screen DPI and the panel scale.
 		/// </summary>
+		/// <summary>Tests only: a fixed slop (logical pixels) instead of the DPI-based one, to reproduce phone-sized slops in the Editor. Negative = off.</summary>
+		internal static float SlopOverride = -1f;
+
 		public static float TouchSlop(VisualElement element, float minimumLogical)
 		{
+			if (SlopOverride >= 0f) return SlopOverride;
 			float panelWidth = element?.panel?.visualTree?.layout.width ?? 0f;
 			if (!(panelWidth > 1f) || Screen.width <= 0) return minimumLogical;
 			float physicalPerLogical = Screen.width / panelWidth;
@@ -34,6 +37,7 @@ namespace DreamTech.DevTools.Unity
 		}
 
 		readonly bool _horizontal;
+		readonly DevScrollView _scroll;
 		bool _pressed, _dragging;
 		int _pointerId;
 		Vector2 _startPosition, _startOffset, _lastPosition;
@@ -41,28 +45,36 @@ namespace DreamTech.DevTools.Unity
 		IVisualElementScheduledItem _inertia;
 		readonly System.Collections.Generic.List<VisualElement> _watched = new System.Collections.Generic.List<VisualElement>();
 
-		public DragScrollManipulator(bool horizontal)
+		/// <summary>Add it to <paramref name="scroll"/> itself.</summary>
+		public DragScrollManipulator(DevScrollView scroll)
 		{
-			_horizontal = horizontal;
+			_scroll = scroll;
+			_horizontal = scroll.Horizontal;
 		}
 
-		ScrollView Scroll => (ScrollView)target;
+		DevScrollView Scroll => _scroll;
 
 		protected override void RegisterCallbacksOnTarget()
 		{
 			target.RegisterCallback<PointerDownEvent>(OnDown, TrickleDown.TrickleDown);
+			target.RegisterCallback<PointerMoveEvent>(OnMove, TrickleDown.TrickleDown);
+			target.RegisterCallback<PointerUpEvent>(OnUp, TrickleDown.TrickleDown);
+			target.RegisterCallback<PointerCancelEvent>(OnCancel, TrickleDown.TrickleDown);
 		}
 
 		protected override void UnregisterCallbacksFromTarget()
 		{
 			target.UnregisterCallback<PointerDownEvent>(OnDown, TrickleDown.TrickleDown);
+			target.UnregisterCallback<PointerMoveEvent>(OnMove, TrickleDown.TrickleDown);
+			target.UnregisterCallback<PointerUpEvent>(OnUp, TrickleDown.TrickleDown);
+			target.UnregisterCallback<PointerCancelEvent>(OnCancel, TrickleDown.TrickleDown);
 			Unwatch();
 			_inertia?.Pause();
 		}
 
 		float Axis(Vector2 v) => _horizontal ? v.x : v.y;
 
-		float HighValue => _horizontal ? Scroll.horizontalScroller.highValue : Scroll.verticalScroller.highValue;
+		float HighValue => Scroll.HighValue;
 
 		void SetOffset(float value)
 		{
@@ -88,7 +100,8 @@ namespace DreamTech.DevTools.Unity
 
 		/// <summary>
 		/// A pressed Button captures the pointer, and a captured pointer's events go to the capturing element only (no trickle /
-		/// bubble through the ScrollView). So the handlers sit on every element from the pressed one up to the ScrollView.
+		/// bubble through the scroll view). So while a press lasts the handlers also sit on every element from the pressed one up to
+		/// the scroll view. Handling one event twice is harmless: the offset is absolute and the velocity skips a zero time step.
 		/// </summary>
 		void Watch(VisualElement pressed)
 		{

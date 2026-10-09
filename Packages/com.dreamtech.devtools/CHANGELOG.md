@@ -2,6 +2,15 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), phiên bản theo [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- **Điện thoại: chạm bị nhận thành kéo và danh sách nhảy lung tung.** `ScrollView` của UI Toolkit tự kéo cảm ứng từ ~10 px, kể cả khi đang đè lên một nút, nằm gọn trong độ rung của một cú chạm (ngưỡng của HUD ~20 px theo DPI), rồi hai cơ chế cùng cuộn nên nội dung giật. Thanh tab và danh sách giờ dùng **`DevScrollView`** tự viết (khung cắt + nội dung dịch bằng translate + lăn chuột + thanh vị trí), không có kéo cảm ứng riêng: chỉ còn `DragScrollManipulator`.
+- **Điện thoại: ô nhập level trên thẻ nhanh bị trả về số cũ.** Thẻ đồng bộ ô về level hiện tại mỗi 0.2 s khi "không đang gõ", mà trạng thái gõ được đọc từ focus UI, thứ bàn phím hệ điều hành không giữ. Ô giờ là ô chữ với bàn phím số; đã chạm / gõ thì không bị đồng bộ hay dựng lại cho tới khi Go / bước level / đóng thẻ. Go blur trước để nhận số vừa gõ, số không hợp lệ thì báo lỗi trên thẻ thay vì nhảy.
+
+### Added
+- Test PlayMode với ngưỡng cỡ điện thoại (40 px) và chạm `isPrimary` như ngón tay thật: rung trên thẻ / nút Run / tab không cuộn và vẫn bấm được, kéo bám đúng ngón tay sau ngưỡng; lăn chuột; ô level giữ số đang gõ và Go nhảy đúng.
+
 ## [0.4.0] - 2026-10-08
 
 ### Added

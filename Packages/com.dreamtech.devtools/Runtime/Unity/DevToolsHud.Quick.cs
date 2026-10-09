@@ -25,7 +25,13 @@ namespace DreamTech.DevTools.Unity
 
 		VisualElement _quick;
 		Label _quickResult;
-		LongField _quickLevelField;
+		TextField _quickLevelField;
+
+		/// <summary>
+		/// The tester touched / typed in the level field: the periodic level sync and card rebuilds leave it alone until a jump,
+		/// a step or the card closing. Focus alone cannot tell: on a phone the text is typed in the OS keyboard.
+		/// </summary>
+		bool _quickLevelEdited;
 		readonly List<QuickButton> _quickButtons = new List<QuickButton>();
 		bool _quickOpen;
 		int _quickVersion = -1;
@@ -55,6 +61,7 @@ namespace DreamTech.DevTools.Unity
 			_hidden = false;
 			_open = false;
 			_quickOpen = true;
+			_quickLevelEdited = false;
 			if (_quickVersion != _reg.Version) BuildQuickCard();
 			SyncQuickLevel();
 			RefreshQuick();
@@ -94,13 +101,24 @@ namespace DreamTech.DevTools.Unity
 				if (previous != null) AddQuickIcon(row, previous, DevIcon.Shape.ChevronLeft, "dt-btn--quick-step");
 				if (jump != null)
 				{
-					_quickLevelField = new LongField();
+					// a text field (number pad on phones), not a LongField: a LongField only takes the typed number when the OS
+					// keyboard closes, and the text is read once, on Go / Enter
+					_quickLevelField = new TextField { name = "dt-quick-level", maxLength = 7, isDelayed = false };
+					_quickLevelField.keyboardType = TouchScreenKeyboardType.NumberPad;
 					_quickLevelField.AddToClassList("dt-field");
 					_quickLevelField.AddToClassList("dt-quick__level");
-					// Enter jumps: typing a level and pressing Go is the most common thing a tester does
+					_quickLevelField.RegisterCallback<PointerDownEvent>(_ => _quickLevelEdited = true, TrickleDown.TrickleDown);
+					_quickLevelField.RegisterCallback<FocusInEvent>(_ => _quickLevelEdited = true);
+					_quickLevelField.RegisterValueChangedCallback(_ => _quickLevelEdited = true);
+					// Enter / the keyboard's submit jumps: typing a level and going there is the most common thing a tester does
 					_quickLevelField.RegisterCallback<KeyDownEvent>(e =>
 					{
 						if (e.keyCode != KeyCode.Return && e.keyCode != KeyCode.KeypadEnter) return;
+						JumpFromQuick(jump);
+						e.StopPropagation();
+					}, TrickleDown.TrickleDown);
+					_quickLevelField.RegisterCallback<NavigationSubmitEvent>(e =>
+					{
 						JumpFromQuick(jump);
 						e.StopPropagation();
 					}, TrickleDown.TrickleDown);
@@ -207,6 +225,7 @@ namespace DreamTech.DevTools.Unity
 
 		void RunFromQuick(DevCommand c)
 		{
+			_quickLevelEdited = false;
 			Run(c);
 			SyncQuickLevel();
 		}
@@ -214,22 +233,34 @@ namespace DreamTech.DevTools.Unity
 		void JumpFromQuick(DevCommand jump)
 		{
 			if (_quickLevelField == null) return;
-			Run(jump, _quickLevelField.value.ToString(CultureInfo.InvariantCulture));
+			// blur first: it closes the phone keyboard and commits what was typed into the field
+			_quickLevelField.Blur();
+			string typed = (_quickLevelField.value ?? "").Trim();
+			if (!int.TryParse(typed, NumberStyles.Integer, CultureInfo.InvariantCulture, out int level) || level < 1)
+			{
+				ShowQuickResult("type a level number (1 or more), got '" + typed + "'", false);
+				return;
+			}
+			_quickLevelEdited = false;
+			Run(jump, level.ToString(CultureInfo.InvariantCulture));
 			SyncQuickLevel();
 		}
 
-		/// <summary>The level field shows the current level (the pinned "Level" watch) unless the tester is typing in it.</summary>
+		/// <summary>The level field shows the current level (the pinned "Level" watch) unless the tester touched it.</summary>
 		void SyncQuickLevel()
 		{
-			if (_quickLevelField == null || IsTypingIn(_quickLevelField)) return;
+			if (_quickLevelField == null || _quickLevelEdited || IsTypingIn(_quickLevelField)) return;
 			foreach (var w in _reg.Watches)
 			{
 				if (w.Category != "Level" || w.Label != "Level") continue;
 				string text;
 				try { text = w.Value(); }
 				catch { return; }
-				if (long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out long level) && _quickLevelField.value != level)
-					_quickLevelField.SetValueWithoutNotify(level);
+				if (long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out long level))
+				{
+					string shown = level.ToString(CultureInfo.InvariantCulture);
+					if (_quickLevelField.value != shown) _quickLevelField.SetValueWithoutNotify(shown);
+				}
 				return;
 			}
 		}
@@ -257,7 +288,8 @@ namespace DreamTech.DevTools.Unity
 		/// <summary>Periodic: blocked commands grey out, switches follow the game, the level field follows the level.</summary>
 		void RefreshQuick()
 		{
-			if (_quickVersion != _reg.Version)
+			// a rebuild would throw away a level the tester is typing: wait until the field is free again
+			if (_quickVersion != _reg.Version && !_quickLevelEdited)
 			{
 				BuildQuickCard();
 				PlaceQuick();

@@ -57,6 +57,7 @@ namespace DreamTech.DevTools.Tests
 			}
 			Set("pointerId", pointerId);
 			Set("pointerType", pointerType);
+			Set("isPrimary", true); // a real finger is primary (UI Toolkit's ScrollView only touch-scrolled primary pointers)
 			Set("position", (Vector3)panelPosition);
 			Set("localPosition", (Vector3)element.WorldToLocal(panelPosition));
 			Set("button", 0);
@@ -87,7 +88,7 @@ namespace DreamTech.DevTools.Tests
 
 		static VisualElement OtherTab(VisualElement root)
 		{
-			var tabs = root.Q<ScrollView>("dt-tabs");
+			var tabs = root.Q<DevScrollView>("dt-tabs");
 			foreach (var child in tabs.Children())
 				if (!child.ClassListContains("dt-tab--on") && tabs.worldBound.Contains(child.worldBound.center)) return child;
 			return null;
@@ -99,15 +100,15 @@ namespace DreamTech.DevTools.Tests
 		public IEnumerator DraggingTheTabStripScrollsAndDoesNotSwitchTab([ValueSource(nameof(PointerKinds))] object[] kind)
 		{
 			var root = Root();
-			var tabs = root.Q<ScrollView>("dt-tabs");
-			Assert.Greater(tabs.horizontalScroller.highValue, 10f, "the tab strip must overflow for this test");
+			var tabs = root.Q<DevScrollView>("dt-tabs");
+			Assert.Greater(tabs.HighValue, 10f, "the tab strip must overflow for this test");
 			var tab = OtherTab(root);
 			Assert.IsNotNull(tab);
 			float before = tabs.scrollOffset.x;
-			float direction = before < tabs.horizontalScroller.highValue * 0.5f ? -1f : 1f; // drag towards the side that has room
+			float direction = before < tabs.HighValue * 0.5f ? -1f : 1f; // drag towards the side that has room
 			Drag(tab, new Vector2(80f * direction, 0f), (string)kind[0], (int)kind[1]);
 			yield return null;
-			Assert.Greater(Mathf.Abs(tabs.scrollOffset.x - before), 20f, "the drag must scroll the strip (" + kind[0] + ", from " + before + " of " + tabs.horizontalScroller.highValue + ")");
+			Assert.Greater(Mathf.Abs(tabs.scrollOffset.x - before), 20f, "the drag must scroll the strip (" + kind[0] + ", from " + before + " of " + tabs.HighValue + ")");
 			Assert.IsFalse(tab.ClassListContains("dt-tab--on"), "a drag must not select the tab under the finger");
 		}
 
@@ -126,8 +127,8 @@ namespace DreamTech.DevTools.Tests
 		public IEnumerator DraggingTheBodyScrollsAndDoesNotRunTheCommand([ValueSource(nameof(PointerKinds))] object[] kind)
 		{
 			var root = Root();
-			var body = root.Q<ScrollView>("dt-body");
-			Assert.Greater(body.verticalScroller.highValue, 10f, "the body must overflow for this test");
+			var body = root.Q<DevScrollView>("dt-body");
+			Assert.Greater(body.HighValue, 10f, "the body must overflow for this test");
 			var run = root.Q<Button>(className: "dt-btn--primary");
 			Assert.IsNotNull(run);
 			Drag(run, new Vector2(0f, -80f), (string)kind[0], (int)kind[1]);
@@ -157,7 +158,7 @@ namespace DreamTech.DevTools.Tests
 		public IEnumerator AWobblyTapOnRunStillRunsAndDoesNotScroll()
 		{
 			var root = Root();
-			var body = root.Q<ScrollView>("dt-body");
+			var body = root.Q<DevScrollView>("dt-body");
 			var run = root.Q<Button>(className: "dt-btn--primary");
 			float slop = Slop(body);
 			float before = body.scrollOffset.y;
@@ -172,12 +173,153 @@ namespace DreamTech.DevTools.Tests
 			Assert.AreEqual(1, _ran, "a wobbly tap must still press Run (slop " + slop + ")");
 		}
 
+		static void SetSlopOverride(float logical) =>
+			typeof(DevToolsHud).Assembly.GetType("DreamTech.DevTools.Unity.DragScrollManipulator")
+				.GetField("SlopOverride", BindingFlags.Static | BindingFlags.NonPublic).SetValue(null, logical);
+
+		// ---- phone-sized slop --------------------------------------------------------------------------------------------
+		// On a phone the DPI slop is ~20 logical px. UI Toolkit's ScrollView started its own touch scrolling at ~10 px (even under
+		// a pressed button), turning taps into drags and making the content jump. These reproduce that with a 40 px slop.
+
+		[UnityTest]
+		public IEnumerator PhoneSlop_AWobbleOnACardNeverMovesTheBody()
+		{
+			var root = Root();
+			var body = root.Q<DevScrollView>("dt-body");
+			var label = root.Q<Label>(className: "dt-card__label");
+			SetSlopOverride(40f);
+			try
+			{
+				float before = body.scrollOffset.y;
+				Vector2 at = label.worldBound.center;
+				Send<PointerDownEvent>(label, at, "touch", 1);
+				for (int i = 1; i <= 10; i++)
+				{
+					Send<PointerMoveEvent>(label, at + new Vector2(0f, -2.5f * i), "touch", 1);
+					yield return null;
+				}
+				Assert.AreEqual(before, body.scrollOffset.y, 0.5f, "25 px under a 40 px slop: nothing may scroll");
+				Send<PointerUpEvent>(label, at + new Vector2(0f, -25f), "touch", 1);
+				for (int i = 0; i < 10; i++) yield return null;
+				Assert.AreEqual(before, body.scrollOffset.y, 0.5f, "nor after the release");
+			}
+			finally
+			{
+				SetSlopOverride(-1f);
+			}
+		}
+
+		[UnityTest]
+		public IEnumerator PhoneSlop_AWobblyTapOnRunRunsItAndNothingScrolls()
+		{
+			var root = Root();
+			var body = root.Q<DevScrollView>("dt-body");
+			var run = root.Q<Button>(className: "dt-btn--primary");
+			SetSlopOverride(40f);
+			try
+			{
+				float before = body.scrollOffset.y;
+				Vector2 at = run.worldBound.center;
+				Send<PointerDownEvent>(run, at, "touch", 1);
+				for (int i = 1; i <= 6; i++)
+				{
+					Send<PointerMoveEvent>(run, at + new Vector2(1f, -2.5f * i), "touch", 1);
+					yield return null;
+				}
+				Send<PointerUpEvent>(run, at + new Vector2(1f, -15f), "touch", 1);
+				yield return null;
+				Assert.AreEqual(before, body.scrollOffset.y, 0.5f, "a wobbly tap must not scroll");
+				Assert.AreEqual(1, _ran, "a wobbly tap still presses Run");
+			}
+			finally
+			{
+				SetSlopOverride(-1f);
+			}
+		}
+
+		[UnityTest]
+		public IEnumerator PhoneSlop_AWobblyTapOnATabSelectsItAndTheStripStaysStill()
+		{
+			var root = Root();
+			var tabs = root.Q<DevScrollView>("dt-tabs");
+			var tab = OtherTab(root);
+			SetSlopOverride(40f);
+			try
+			{
+				float before = tabs.scrollOffset.x;
+				Vector2 at = tab.worldBound.center;
+				Send<PointerDownEvent>(tab, at, "touch", 1);
+				for (int i = 1; i <= 10; i++)
+				{
+					Send<PointerMoveEvent>(tab, at + new Vector2(2.5f * i, 1f), "touch", 1);
+					yield return null;
+				}
+				// measured before the release: selecting a tab then scrolls it to the middle on purpose
+				Assert.AreEqual(before, tabs.scrollOffset.x, 0.5f, "the strip must not move while the finger wobbles under the slop");
+				Send<PointerUpEvent>(tab, at + new Vector2(25f, 1f), "touch", 1);
+				yield return null;
+				yield return null;
+				Assert.IsTrue(tab.ClassListContains("dt-tab--on"), "a wobbly tap still selects the tab");
+			}
+			finally
+			{
+				SetSlopOverride(-1f);
+			}
+		}
+
+		[UnityTest]
+		public IEnumerator PhoneSlop_ADragFollowsTheFingerPastTheSlopWithoutJumping()
+		{
+			var root = Root();
+			var body = root.Q<DevScrollView>("dt-body");
+			Assert.Greater(body.HighValue, 80f);
+			var label = root.Q<Label>(className: "dt-card__label");
+			SetSlopOverride(40f);
+			try
+			{
+				float before = body.scrollOffset.y;
+				Vector2 at = label.worldBound.center;
+				Send<PointerDownEvent>(label, at, "touch", 1);
+				for (int i = 1; i <= 20; i++)
+				{
+					// 41 px crosses the slop, then 30 px more: the body follows by exactly 30
+					float travel = i <= 10 ? 4.1f * i : 41f + 3f * (i - 10);
+					Send<PointerMoveEvent>(label, at + new Vector2(0f, -travel), "touch", 1);
+					yield return null;
+				}
+				yield return new WaitForSecondsRealtime(0.2f); // the finger stopped: no fling
+				Send<PointerUpEvent>(label, at + new Vector2(0f, -71f), "touch", 1);
+				for (int i = 0; i < 20; i++) yield return null;
+				Assert.AreEqual(30f, body.scrollOffset.y - before, 1.5f, "the body follows the finger past the slop, nothing else adds to it");
+			}
+			finally
+			{
+				SetSlopOverride(-1f);
+			}
+		}
+
+		[UnityTest]
+		public IEnumerator TheMouseWheelScrollsTheBody()
+		{
+			var root = Root();
+			var body = root.Q<DevScrollView>("dt-body");
+			float before = body.scrollOffset.y;
+			var notches = new Event { type = EventType.ScrollWheel, delta = new Vector2(0f, 3f), mousePosition = body.worldBound.center };
+			using (var wheel = WheelEvent.GetPooled(notches))
+			{
+				wheel.target = body;
+				body.SendEvent(wheel);
+			}
+			yield return null;
+			Assert.Greater(body.scrollOffset.y, before + 10f, "three notches down scroll the body");
+		}
+
 		[UnityTest]
 		public IEnumerator ADragStartsScrollingFromWhereItCrossedTheSlop()
 		{
 			var root = Root();
-			var body = root.Q<ScrollView>("dt-body");
-			Assert.Greater(body.verticalScroller.highValue, 80f, "the body must overflow for this test");
+			var body = root.Q<DevScrollView>("dt-body");
+			Assert.Greater(body.HighValue, 80f, "the body must overflow for this test");
 			var run = root.Q<Button>(className: "dt-btn--primary");
 			float slop = Slop(body);
 			float before = body.scrollOffset.y;

@@ -260,20 +260,52 @@
 
 /* ---- tabs ----------------------------------------------------------------------------------------------------- */
 
+/* ---- DevScrollView: our own scroll container (no built-in touch scrolling, see DevScrollView.cs) ------------------- */
+
+.dt-scroll {
+    overflow: hidden;
+}
+
+.dt-scroll__viewport {
+    flex-grow: 1;
+    flex-shrink: 1;
+    overflow: hidden;
+}
+
+.dt-scroll--horizontal .dt-scroll__viewport {
+    flex-direction: row;
+}
+
+/* no shrink: the content keeps its full length and the viewport clips it */
+.dt-scroll__content {
+    flex-shrink: 0;
+}
+
+.dt-scroll--horizontal .dt-scroll__content {
+    flex-direction: row;
+}
+
+.dt-scroll__thumb {
+    position: absolute;
+    right: 2px;
+    width: 4px;
+    border-radius: 2px;
+    background-color: var(--dt-surface-3);
+}
+
+.dt-tabs-wrap {
+    flex-shrink: 0;
+}
+
 .dt-tabs {
     flex-shrink: 0;
     height: 48px;
     margin: 0;
 }
 
-.dt-tabs .unity-scroll-view__content-container {
-    flex-direction: row;
+.dt-tabs .dt-scroll__content {
     align-items: center;
     padding: 0 12px 0 12px;
-    height: 48px;
-}
-
-.dt-tabs .unity-scroll-view__content-viewport {
     height: 48px;
 }
 
@@ -482,33 +514,8 @@
     flex-grow: 1;
 }
 
-.dt-body .unity-scroll-view__content-container {
+.dt-body .dt-scroll__content {
     padding: 2px 12px 56px 12px;
-}
-
-.dt-body .unity-scroller--vertical {
-    width: 8px;
-    margin: 4px 2px 4px 0;
-    background-color: transparent;
-    border-width: 0;
-}
-
-.dt-body .unity-base-slider__tracker {
-    background-color: transparent;
-    border-width: 0;
-}
-
-.dt-body .unity-base-slider__dragger {
-    width: 4px;
-    margin-left: 2px;
-    background-color: var(--dt-surface-3);
-    border-width: 0;
-    border-radius: 2px;
-}
-
-.dt-body .unity-scroller__low-button,
-.dt-body .unity-scroller__high-button {
-    display: none;
 }
 
 .dt-section {
@@ -1076,8 +1083,7 @@
 }
 
 .dt-compact .dt-tabs,
-.dt-compact .dt-tabs .unity-scroll-view__content-container,
-.dt-compact .dt-tabs .unity-scroll-view__content-viewport {
+.dt-compact .dt-tabs .dt-scroll__content {
     height: 42px;
 }
 

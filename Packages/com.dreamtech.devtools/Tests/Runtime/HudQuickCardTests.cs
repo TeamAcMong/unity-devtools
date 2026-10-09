@@ -89,6 +89,7 @@ namespace DreamTech.DevTools.Tests
 			}
 			Set("pointerId", 1);
 			Set("pointerType", "touch");
+			Set("isPrimary", true);
 			Set("position", (Vector3)panelPosition);
 			Set("localPosition", (Vector3)element.WorldToLocal(panelPosition));
 			Set("button", 0);
@@ -102,9 +103,9 @@ namespace DreamTech.DevTools.Tests
 		public IEnumerator TheCardShowsTheLevelAndStyledMatchButtons()
 		{
 			Assert.IsTrue(DevToolsHud.IsQuickCardOpen);
-			var field = Card().Q<LongField>();
+			var field = LevelField();
 			Assert.IsNotNull(field, "the level field");
-			Assert.AreEqual(7, field.value, "it shows the current level");
+			Assert.AreEqual("7", field.value, "it shows the current level");
 			Assert.IsTrue(ButtonWithText("Win").ClassListContains("dt-btn--positive"), "Win is green");
 			Assert.IsTrue(ButtonWithText("Lose").ClassListContains("dt-btn--danger"), "Lose is red");
 			Assert.IsTrue(ButtonWithText("Restart").ClassListContains("dt-btn--warning"), "Restart is orange");
@@ -122,16 +123,42 @@ namespace DreamTech.DevTools.Tests
 			yield return null;
 			Assert.AreEqual(8, _level.Level, "the right chevron goes to the next level");
 			yield return new WaitForSecondsRealtime(0.3f);
-			Assert.AreEqual(8, Card().Q<LongField>().value, "the field follows the level");
+			Assert.AreEqual("8", LevelField().value, "the field follows the level");
+		}
+
+		static TextField LevelField() => Card().Q<TextField>("dt-quick-level");
+
+		/// <summary>
+		/// The phone bug: the card re-synced the field to the current level every 0.2 s because "is the tester typing" was read
+		/// from UI focus, which an OS keyboard does not hold. Once touched, the field must keep what is typed until Go.
+		/// </summary>
+		[UnityTest]
+		public IEnumerator ATypedLevelSurvivesTheLevelSyncAndGoJumpsToIt()
+		{
+			var field = LevelField();
+			Tap(field);
+			field.value = "42";
+			field.Blur(); // what a phone does: the OS keyboard closes, the field has no UI focus any more
+			yield return new WaitForSecondsRealtime(0.8f); // several refresh ticks
+			Assert.AreEqual("42", field.value, "the typed level must not be put back to the current one");
+			Tap(ButtonWithText("Go"));
+			yield return null;
+			Assert.AreEqual(42, _level.Level, "Go jumps to the typed level");
+			yield return new WaitForSecondsRealtime(0.4f);
+			Assert.AreEqual("42", LevelField().value, "after the jump the field follows the level again");
 		}
 
 		[UnityTest]
-		public IEnumerator GoJumpsToTheTypedLevel()
+		public IEnumerator GoWithSomethingThatIsNotALevelDoesNotJump()
 		{
-			Card().Q<LongField>().value = 42;
+			var field = LevelField();
+			Tap(field);
+			field.value = "abc";
 			Tap(ButtonWithText("Go"));
 			yield return null;
-			Assert.AreEqual(42, _level.Level);
+			Assert.AreEqual(7, _level.Level, "no jump");
+			var result = Card().Q<Label>(className: "dt-quick__result");
+			Assert.IsTrue(result.ClassListContains("dt-quick__result--error"), "the card says why");
 		}
 
 		[UnityTest]
