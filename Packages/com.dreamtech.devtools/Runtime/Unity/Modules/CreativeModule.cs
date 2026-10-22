@@ -11,6 +11,8 @@ namespace DreamTech.DevTools.Unity
 	/// Clean screen for videos and screenshots: hide the game's UI (all of it, one canvas, or groups the game names) and the
 	/// DEV pill. Canvases are hidden by <c>Canvas.enabled</c>, never <c>SetActive</c>: the UI keeps its Update / tweens and
 	/// comes back exactly as it was. Showing again only restores what this module hid, never what the game hid on its own.
+	/// "Every canvas" means every canvas that draws on its own: root canvases AND nested ones with <c>overrideSorting</c>, which
+	/// keep drawing when their root is disabled (a UI manager usually puts each screen on such a canvas).
 	/// Games add named groups with <see cref="DevCreative.AddGroup"/>.
 	/// </summary>
 	[DevModule(850)]
@@ -19,9 +21,9 @@ namespace DreamTech.DevTools.Unity
 		public void Register(DevRegistry r)
 		{
 			r.Toggle(DevCreative.Category, "Game UI", () => !DevCreative.AllHidden, on => DevCreative.SetAllHidden(!on),
-				"Every canvas and UI Toolkit document of the game (the dev tools excepted). Off = hidden.").With(quick: true);
+				"Every canvas (nested override-sorting ones included) and UI Toolkit document of the game, also those opened while it is off. Off = hidden.").With(quick: true);
 			r.Action(DevCreative.Category, "Show / hide one canvas", new[] { DevParam.Choice("canvas", DevCreative.CanvasNames) },
-				a => DevCreative.ToggleCanvas(a.Str(0)), "Root canvases of the loaded scenes, by name.");
+				a => DevCreative.ToggleCanvas(a.Str(0)), "Every canvas that draws on its own (root, or nested with override sorting), by hierarchy path.");
 			r.Toggle(DevCreative.Category, "DEV pill", () => !DevToolsHud.IsHidden, on => DevToolsHud.SetHidden(!on),
 				"Hide the dev tools themselves. Bring them back with quick taps in the top-left corner or a multi-finger tap.");
 			r.Action(DevCreative.Category, "Show everything again", () =>
@@ -43,6 +45,10 @@ namespace DreamTech.DevTools.Unity
 		static readonly Dictionary<string, HashSet<Behaviour>> HiddenByGroup = new Dictionary<string, HashSet<Behaviour>>();
 
 		public static bool AllHidden { get; private set; }
+
+		/// <summary>While everything is hidden, screens and popups the game opens later are hidden too, checked this often.</summary>
+		const float RescanSeconds = 0.25f;
+		static float _nextRescan;
 
 		/// <summary>
 		/// Adds a "Show &lt;name&gt;" switch to the Creative tab. <paramref name="targets"/> is asked each time the switch is used,
@@ -106,8 +112,32 @@ namespace DreamTech.DevTools.Unity
 			HiddenByGroup.Remove(name);
 		}
 
-		/// <summary>Root canvases of the loaded scenes (the dev tools draw with UI Toolkit, so none of them is ours).</summary>
-		static IEnumerable<Canvas> RootCanvases() => FindActive<Canvas>().Where(c => c.isRootCanvas);
+		/// <summary>
+		/// Canvases that draw on their own: root canvases and nested ones with override sorting (those keep drawing when their root
+		/// canvas is disabled). The dev tools draw with UI Toolkit, so none of them is ours.
+		/// </summary>
+		static IEnumerable<Canvas> DrawingCanvases() => FindActive<Canvas>().Where(c => c.isRootCanvas || c.overrideSorting);
+
+		/// <summary>Hierarchy path ("Root/Child/Screen"), the name testers pick a canvas by; duplicates get " #2", " #3"...</summary>
+		static Dictionary<string, Canvas> CanvasesByPath()
+		{
+			var byPath = new Dictionary<string, Canvas>(StringComparer.Ordinal);
+			foreach (var canvas in DrawingCanvases().Concat(HiddenBehaviours.OfType<Canvas>().Where(c => c != null)).Distinct())
+			{
+				string path = PathOf(canvas.transform);
+				string key = path;
+				for (int copy = 2; byPath.ContainsKey(key); copy++) key = path + " #" + copy;
+				byPath[key] = canvas;
+			}
+			return byPath;
+		}
+
+		static string PathOf(Transform transform)
+		{
+			string path = transform.name;
+			for (var parent = transform.parent; parent != null; parent = parent.parent) path = parent.name + "/" + path;
+			return path;
+		}
 
 		static IEnumerable<UIDocument> GameDocuments() => FindActive<UIDocument>().Where(d => d.GetComponentInParent<DevToolsHud>() == null);
 
@@ -123,8 +153,7 @@ namespace DreamTech.DevTools.Unity
 		}
 
 		public static IList<string> CanvasNames() =>
-			RootCanvases().Select(c => c.name).Concat(HiddenBehaviours.OfType<Canvas>().Where(c => c != null).Select(c => c.name))
-				.Distinct().OrderBy(n => n, StringComparer.OrdinalIgnoreCase).ToList();
+			CanvasesByPath().Keys.OrderBy(path => path, StringComparer.OrdinalIgnoreCase).ToList();
 
 		public static void SetAllHidden(bool hidden)
 		{
@@ -134,7 +163,14 @@ namespace DreamTech.DevTools.Unity
 				RestoreAll();
 				return;
 			}
-			foreach (var canvas in RootCanvases())
+			AllHidden = true;
+			HideEverythingShown();
+		}
+
+		/// <summary>Disables every drawing canvas and UI Toolkit document of the game that is showing, remembering each.</summary>
+		static void HideEverythingShown()
+		{
+			foreach (var canvas in DrawingCanvases())
 			{
 				if (!canvas.enabled) continue;
 				canvas.enabled = false;
@@ -143,28 +179,32 @@ namespace DreamTech.DevTools.Unity
 			foreach (var document in GameDocuments())
 			{
 				var root = document.rootVisualElement;
-				if (root == null || root.resolvedStyle.display == DisplayStyle.None) continue;
+				if (root == null || HiddenDocuments.Contains(document) || root.resolvedStyle.display == DisplayStyle.None) continue;
 				root.style.display = DisplayStyle.None;
 				HiddenDocuments.Add(document);
 			}
-			AllHidden = true;
 		}
 
-		public static DevResult ToggleCanvas(string name)
+		/// <summary>Called every frame by the HUD: while everything is hidden, also hide what the game opened since (a popup, a new screen).</summary>
+		internal static void Tick()
 		{
-			var hiddenCanvas = HiddenBehaviours.OfType<Canvas>().FirstOrDefault(c => c != null && c.name == name);
-			if (hiddenCanvas != null)
+			if (!AllHidden || Time.unscaledTime < _nextRescan) return;
+			_nextRescan = Time.unscaledTime + RescanSeconds;
+			HideEverythingShown();
+		}
+
+		public static DevResult ToggleCanvas(string path)
+		{
+			if (!CanvasesByPath().TryGetValue(path ?? "", out var canvas)) return DevResult.Fail("no drawing canvas at '" + path + "'");
+			if (HiddenBehaviours.Remove(canvas))
 			{
-				hiddenCanvas.enabled = true;
-				HiddenBehaviours.Remove(hiddenCanvas);
-				return DevResult.Success("shown " + name);
+				canvas.enabled = true;
+				return DevResult.Success("shown " + path);
 			}
-			var canvas = RootCanvases().FirstOrDefault(c => c.name == name);
-			if (canvas == null) return DevResult.Fail("no root canvas named '" + name + "'");
-			if (!canvas.enabled) return DevResult.Fail("'" + name + "' is hidden by the game itself");
+			if (!canvas.enabled) return DevResult.Fail("'" + path + "' is hidden by the game itself");
 			canvas.enabled = false;
 			HiddenBehaviours.Add(canvas);
-			return DevResult.Success("hidden " + name);
+			return DevResult.Success("hidden " + path);
 		}
 
 		/// <summary>Shows everything this module hid: canvases, UI Toolkit documents and every named group.</summary>

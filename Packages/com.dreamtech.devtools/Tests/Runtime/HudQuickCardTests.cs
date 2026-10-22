@@ -206,5 +206,84 @@ namespace DreamTech.DevTools.Tests
 				Object.Destroy(hiddenByGame.gameObject);
 			}
 		}
+
+		/// <summary>A UI manager like Icon Match's: one root canvas, each screen a nested canvas with override sorting.</summary>
+		static Canvas NestedScreen(Transform root, string name, bool overrideSorting)
+		{
+			var screen = new GameObject(name, typeof(RectTransform), typeof(Canvas)).GetComponent<Canvas>();
+			screen.transform.SetParent(root, false);
+			screen.overrideSorting = overrideSorting;
+			return screen;
+		}
+
+		/// <summary>The Icon Match bug: override-sorting screens kept drawing after their root canvas was disabled.</summary>
+		[UnityTest]
+		public IEnumerator CreativeAlsoHidesNestedOverrideSortingScreens()
+		{
+			var root = new GameObject("UI Manager", typeof(Canvas)).GetComponent<Canvas>();
+			var inGame = NestedScreen(root.transform, "ScreenInGame", true);
+			var plain = NestedScreen(root.transform, "Panel", false);
+			var closedByGame = NestedScreen(root.transform, "ScreenShop", true);
+			closedByGame.enabled = false;
+			yield return null;
+			try
+			{
+				Assert.IsTrue(DevTools.Registry.Execute("creative.game-ui off").Ok);
+				Assert.IsFalse(root.enabled, "the root canvas is hidden");
+				Assert.IsFalse(inGame.enabled, "a nested override-sorting screen draws on its own: it must be hidden too");
+				Assert.IsTrue(plain.enabled, "a plain nested canvas is drawn by its root: left alone");
+				Assert.IsTrue(DevTools.Registry.Execute("creative.game-ui on").Ok);
+				Assert.IsTrue(root.enabled);
+				Assert.IsTrue(inGame.enabled, "the screen comes back");
+				Assert.IsFalse(closedByGame.enabled, "a screen the game had closed stays closed");
+			}
+			finally
+			{
+				Object.Destroy(root.gameObject);
+			}
+		}
+
+		[UnityTest]
+		public IEnumerator WhileTheGameUiIsOffAPopupOpenedLaterIsHiddenToo()
+		{
+			var root = new GameObject("UI Manager", typeof(Canvas)).GetComponent<Canvas>();
+			var popup = NestedScreen(root.transform, "PopupWin", true);
+			popup.enabled = false;
+			yield return null;
+			try
+			{
+				Assert.IsTrue(DevTools.Registry.Execute("creative.game-ui off").Ok);
+				popup.enabled = true; // the game opens a popup while the screen is meant to be clean
+				yield return new WaitForSecondsRealtime(0.5f);
+				Assert.IsFalse(popup.enabled, "a popup opened while the game UI is off is hidden too");
+				Assert.IsTrue(DevTools.Registry.Execute("creative.game-ui on").Ok);
+				Assert.IsTrue(popup.enabled, "and comes back with the rest");
+			}
+			finally
+			{
+				Object.Destroy(root.gameObject);
+			}
+		}
+
+		[UnityTest]
+		public IEnumerator OneNestedScreenCanBeHiddenByItsPath()
+		{
+			var root = new GameObject("UI Manager", typeof(Canvas)).GetComponent<Canvas>();
+			var inGame = NestedScreen(root.transform, "ScreenInGame", true);
+			yield return null;
+			try
+			{
+				CollectionAssert.Contains(DevCreative.CanvasNames(), "UI Manager/ScreenInGame", "nested screens are listed by path");
+				Assert.IsTrue(DevCreative.ToggleCanvas("UI Manager/ScreenInGame").Ok);
+				Assert.IsFalse(inGame.enabled);
+				Assert.IsTrue(root.enabled, "only that screen");
+				Assert.IsTrue(DevCreative.ToggleCanvas("UI Manager/ScreenInGame").Ok);
+				Assert.IsTrue(inGame.enabled, "the same path shows it again");
+			}
+			finally
+			{
+				Object.Destroy(root.gameObject);
+			}
+		}
 	}
 }
