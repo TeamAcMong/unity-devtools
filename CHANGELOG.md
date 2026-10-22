@@ -2,6 +2,12 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), phiên bản theo [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- **Creative > Game UI không ẩn hết giao diện.** Chỉ canvas gốc bị tắt, trong khi canvas con có `overrideSorting` (mỗi màn hình của một UI manager, như ScreenInGame của Icon Match) vẫn tự vẽ. Giờ tắt mọi canvas tự vẽ (canvas gốc + canvas con override sorting) và UIDocument của game; trong lúc đang ẩn, cứ 0.25 s quét lại để màn / popup mở sau cũng bị ẩn. Bật lại chỉ khôi phục đúng những gì dev tools đã ẩn.
+- **Creative > Show / hide one canvas** liệt kê mọi canvas tự vẽ theo đường dẫn hierarchy (`UI Manager/cScreen/ScreenInGame(Clone)`), không chỉ canvas gốc (ở Icon Match cả UI chỉ có một canvas gốc).
+
 ## [0.4.1] - 2026-10-09
 
 ### Fixed

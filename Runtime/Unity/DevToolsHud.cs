@@ -250,6 +250,7 @@ namespace DreamTech.DevTools.Unity
 			if (fingers > 0 && touches == fingers && _lastTouchCount < fingers) SetHidden(!_hidden);
 			_lastTouchCount = touches;
 			if (_hidden) TickCornerTaps();
+			DevCreative.Tick(); // while "Game UI" is off, also hide screens and popups opened since
 
 			// only what is on screen: pinned watches, plus the open tab's (all of them on the Watch tab), each at its own rate
 			float now = Time.realtimeSinceStartup;
