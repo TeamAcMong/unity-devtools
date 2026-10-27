@@ -35,6 +35,8 @@
     --dt-warning-hover: rgb(255, 180, 64);
     --dt-warning-press: rgb(230, 138, 0);
     --dt-on-warning: rgb(30, 22, 6);
+    --dt-warning-soft: rgba(255, 196, 64, 0.16);
+    --dt-log-mark: rgb(108, 117, 142);
 
     /* text */
     --dt-text: rgb(236, 239, 247);

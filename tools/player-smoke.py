@@ -30,6 +30,7 @@ SCRIPT = [
     'demo.start-level', 'level.lose', 'waitfor revive-offer 5', 'ads.rewarded-outcome ForceFail', 'demo.revive-with-ad',
     'ads.rewarded-outcome Normal',
     'hud.show-panel log', 'wait 0.5', 'engine.screenshot true',
+    'logs.log-test-error', 'hud.show-panel logs', 'wait 0.5', 'engine.screenshot true',  # the in-game Unity console
     'hud.show-panel engine', 'wait 0.5', 'engine.screenshot true',
     'hud.show-panel watch', 'wait 0.5', 'engine.screenshot true',
     'hud.show-panel console', 'wait 0.5', 'engine.screenshot true',

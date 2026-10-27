@@ -193,11 +193,12 @@ namespace DreamTech.DevTools.Unity
 		}
 	}
 
-	/// <summary>Warnings and errors of the Unity console, readable on a device.</summary>
+	/// <summary>The Unity console, readable on a device. The HUD draws the console viewer on this category's page.</summary>
 	[DevModule(810)]
 	sealed class LogsModule : IDevModule
 	{
-		const string Cat = "Logs";
+		internal const string Category = "Logs";
+		const string Cat = Category;
 
 		public void Register(DevRegistry r)
 		{
@@ -205,7 +206,7 @@ namespace DreamTech.DevTools.Unity
 			r.Watch(Cat, "Last error", () =>
 			{
 				for (int i = DevToolsHost.Logs.Count - 1; i >= 0; i--)
-					if (DevToolsHost.Logs[i].Type != LogType.Warning) return FirstLine(DevToolsHost.Logs[i].Message);
+					if (DevToolsHost.IsError(DevToolsHost.Logs[i].Type)) return FirstLine(DevToolsHost.Logs[i].Message);
 				return "none";
 			});
 			r.Action(Cat, "Log test error", () =>
@@ -215,7 +216,7 @@ namespace DreamTech.DevTools.Unity
 			}, "Writes one error to the Unity console (checks the pill badge and the Log tab).");
 			r.Action(Cat, "Show recent", new[] { DevParam.Int("count", 10), DevParam.Bool("warnings", false), DevParam.Bool("stack", false) }, a =>
 			{
-				var items = DevToolsHost.Logs.Where(l => a.Bool(1) || l.Type != LogType.Warning).Reverse().Take(Math.Max(1, a.Int(0))).ToList();
+				var items = DevToolsHost.Logs.Where(l => DevToolsHost.IsError(l.Type) || (a.Bool(1) && l.Type == LogType.Warning)).Reverse().Take(Math.Max(1, a.Int(0))).ToList();
 				if (items.Count == 0) return DevResult.Success("nothing logged");
 				var sb = new StringBuilder();
 				foreach (var l in items)

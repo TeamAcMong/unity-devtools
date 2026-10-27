@@ -1099,6 +1099,138 @@
     margin-top: 8px;
 }
 
+/* ---- Logs page: the in-game Unity console ------------------------------------------------------------------------ */
+
+.dt-logbar__chips {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 8px 0 0 0;
+}
+
+.dt-logchip {
+    margin: 0 6px 6px 0;
+    padding: 0 12px;
+    height: 34px;
+    min-width: 0;
+    flex-shrink: 0;
+    border-width: 1px;
+    border-color: var(--dt-border);
+    border-radius: 17px;
+    background-color: var(--dt-surface);
+    color: var(--dt-text-3);
+    font-size: var(--dt-font-small);
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+}
+
+.dt-logchip--on {
+    background-color: var(--dt-accent-soft);
+    border-color: var(--dt-accent);
+    color: var(--dt-text);
+}
+
+.dt-logchip--error.dt-logchip--on {
+    background-color: var(--dt-danger-soft);
+    border-color: var(--dt-danger);
+    color: var(--dt-danger);
+}
+
+.dt-logchip--warning.dt-logchip--on {
+    background-color: var(--dt-warning-soft);
+    border-color: var(--dt-warning);
+    color: var(--dt-warning);
+}
+
+.dt-logchip--log.dt-logchip--on {
+    background-color: var(--dt-surface-2);
+    border-color: var(--dt-border-strong);
+    color: var(--dt-text);
+}
+
+.dt-btn--small {
+    height: 34px;
+    min-width: 0;
+    padding: 0 12px;
+    margin: 0 0 6px 6px;
+    font-size: var(--dt-font-small);
+}
+
+.dt-logrow {
+    margin: 0 0 6px 0;
+    padding: 6px 10px;
+    background-color: var(--dt-surface);
+    border-radius: var(--dt-radius-control);
+    border-left-width: 3px;
+    border-color: var(--dt-log-mark);
+}
+
+.dt-logrow--warning {
+    border-color: var(--dt-warning);
+}
+
+.dt-logrow--error {
+    border-color: var(--dt-danger);
+}
+
+.dt-logrow__head {
+    flex-direction: row;
+    align-items: center;
+}
+
+.dt-logrow__time {
+    flex-grow: 1;
+    margin: 0;
+    padding: 0;
+    font-size: var(--dt-font-caption);
+    color: var(--dt-text-3);
+}
+
+.dt-logrow__count {
+    margin: 0;
+    padding: 1px 8px;
+    border-radius: 9px;
+    background-color: var(--dt-surface-3);
+    color: var(--dt-text);
+    font-size: var(--dt-font-caption);
+    -unity-font-style: bold;
+}
+
+.dt-logrow__message {
+    margin: 2px 0 0 0;
+    padding: 0;
+    font-size: var(--dt-font-small);
+    color: var(--dt-text);
+    white-space: normal;
+}
+
+.dt-logrow--warning .dt-logrow__message {
+    color: var(--dt-warning);
+}
+
+.dt-logrow--error .dt-logrow__message {
+    color: var(--dt-danger-hover);
+}
+
+.dt-logrow__stack {
+    margin: 6px 0 0 0;
+    padding: 6px 8px;
+    background-color: var(--dt-field);
+    border-radius: 6px;
+    font-size: var(--dt-font-caption);
+    color: var(--dt-text-2);
+    white-space: normal;
+}
+
+.dt-logrow__copy {
+    align-self: flex-end;
+    margin: 6px 0 0 0;
+}
+
+.dt-compact .dt-logbar__chips {
+    margin-top: 6px;
+}
+
 /* ---- quick card (beside the DEV pill) --------------------------------------------------------------------------- */
 
 .dt-quick {

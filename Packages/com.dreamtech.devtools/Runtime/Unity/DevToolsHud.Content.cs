@@ -51,6 +51,7 @@ namespace DreamTech.DevTools.Unity
 			_cards.Clear();
 			_watchRows.Clear();
 			_logHost = null;
+			_logList = null;
 			_consoleHint = null;
 			_confirmCard = null;
 			_body.Clear();
@@ -83,7 +84,8 @@ namespace DreamTech.DevTools.Unity
 				RefreshSearchChrome();
 			}
 			else if (_tab == TabConsole) _searchSlot.Add(BuildConsoleRow());
-			Show(_searchSlot, search || _tab == TabConsole);
+			else if (IsLogsTab) _searchSlot.Add(BuildLogToolbar());
+			Show(_searchSlot, search || _tab == TabConsole || IsLogsTab);
 		}
 
 		// ---- Quick / category ----------------------------------------------------------------------------------------
@@ -117,6 +119,15 @@ namespace DreamTech.DevTools.Unity
 
 		void BuildCategory(string category)
 		{
+			if (category == LogsModule.Category)
+			{
+				// the console itself replaces the counters (the chips show them); the Logs commands follow the list
+				BuildLogList();
+				var logCommands = _reg.Commands.Where(c => c.Category == category).ToList();
+				if (logCommands.Count > 0) AddSection("ACTIONS");
+				foreach (var c in logCommands) AddCard(c, true);
+				return;
+			}
 			var watches = _reg.Watches.Where(w => w.Category == category).ToList();
 			var commands = _reg.Commands.Where(c => c.Category == category).ToList();
 			if (watches.Count > 0)
@@ -759,6 +770,11 @@ namespace DreamTech.DevTools.Unity
 				if (row.Value.text != text) row.Value.text = text;
 			}
 			if (_consoleHint != null) _consoleHint.text = ConsoleHintText();
+			if (_logList != null)
+			{
+				RefreshLogChips();
+				RefreshLogList();
+			}
 			if (DevTools.RunningScripts.Count != _runningScripts && _tab == TabScenarios) _contentDirty = true;
 		}
 

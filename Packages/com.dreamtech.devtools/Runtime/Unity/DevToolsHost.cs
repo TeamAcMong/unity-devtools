@@ -10,7 +10,8 @@ namespace DreamTech.DevTools.Unity
 {
 	/// <summary>
 	/// Persistent object that owns the HUD, drives running scripts every frame, registers the [DevModule] modules of every
-	/// assembly that references DreamTech.DevTools, runs boot scripts and records the Unity console for the Logs category.
+	/// assembly that references DreamTech.DevTools and runs boot scripts. The Unity console (every type) is recorded from
+	/// SubsystemRegistration on, before the game logs anything, for the Logs page.
 	/// Boot scripts, in this order: settings BootScript, <c>-devboot "..."</c> on the command line, PlayerPrefs BootAlways, and
 	/// PlayerPrefs BootOnce (written by the editor window's Play buttons, deleted when read).
 	/// </summary>
@@ -19,13 +20,15 @@ namespace DreamTech.DevTools.Unity
 	{
 		public struct LogRecord
 		{
+			/// <summary>Unique for the session; stays with the entry when older ones are trimmed.</summary>
+			public int Id;
 			public float Time;
 			public LogType Type;
 			public string Message;
 			public string Stack;
 		}
 
-		public const int MaxLogRecords = 300;
+		public const int MaxLogRecords = 1000;
 
 		public static DevToolsHost Instance { get; private set; }
 
@@ -33,11 +36,32 @@ namespace DreamTech.DevTools.Unity
 		public static IReadOnlyList<LogRecord> Logs => _logs;
 		public static int ErrorCount { get; private set; }
 		public static int WarningCount { get; private set; }
+		/// <summary>Plain Debug.Log entries.</summary>
+		public static int LogCount { get; private set; }
+		/// <summary>Bumped on every recorded entry and on clear, so a view redraws only when the console changed.</summary>
+		public static int LogVersion { get; private set; }
+		static int _nextLogId;
+		static bool _capturing;
+
+		public static bool IsError(LogType type) => type == LogType.Error || type == LogType.Exception || type == LogType.Assert;
 
 		public static void ClearLogs()
 		{
 			_logs.Clear();
-			ErrorCount = WarningCount = 0;
+			ErrorCount = WarningCount = LogCount = 0;
+			LogVersion++;
+		}
+
+		/// <summary>
+		/// Starts (or restarts, for a new play session) recording the console. Called by the bootstrap at SubsystemRegistration, so
+		/// boot logs are kept even though the host is created after the first scene loads. Runs for the whole app, host or not.
+		/// </summary>
+		internal static void StartLogCapture()
+		{
+			Application.logMessageReceived -= OnLog;
+			ClearLogs();
+			Application.logMessageReceived += OnLog;
+			_capturing = true;
 		}
 
 		/// <summary>Creates the host if it does not exist yet (the bootstrap does it after the first scene loads).</summary>
@@ -59,8 +83,7 @@ namespace DreamTech.DevTools.Unity
 				return;
 			}
 			Instance = this;
-			ClearLogs();
-			Application.logMessageReceived += OnLog;
+			if (!_capturing) StartLogCapture();
 			var r = DevTools.Registry;
 			r.Clock = () => Time.realtimeSinceStartupAsDouble;
 			r.CommandException += Debug.LogException;
@@ -91,7 +114,6 @@ namespace DreamTech.DevTools.Unity
 		void OnDestroy()
 		{
 			if (Instance != this) return;
-			Application.logMessageReceived -= OnLog;
 			var r = DevTools.Registry;
 			r.CommandException -= Debug.LogException;
 			r.Executed -= LogEntry;
@@ -105,11 +127,12 @@ namespace DreamTech.DevTools.Unity
 
 		static void OnLog(string message, string stack, LogType type)
 		{
-			if (type == LogType.Error || type == LogType.Exception || type == LogType.Assert) ErrorCount++;
+			if (IsError(type)) ErrorCount++;
 			else if (type == LogType.Warning) WarningCount++;
-			else return; // plain logs are not kept: the Logs category is about problems
-			_logs.Add(new LogRecord { Time = Time.realtimeSinceStartup, Type = type, Message = message, Stack = stack });
+			else LogCount++;
+			_logs.Add(new LogRecord { Id = ++_nextLogId, Time = Time.realtimeSinceStartup, Type = type, Message = message ?? "", Stack = stack ?? "" });
 			if (_logs.Count > MaxLogRecords) _logs.RemoveRange(0, _logs.Count - MaxLogRecords);
+			LogVersion++;
 		}
 
 		/// <summary>DreamTech.DevTools itself and every loaded assembly that references it.</summary>
