@@ -70,6 +70,21 @@ namespace DreamTech.DevTools.Tests
 			StringAssert.Contains("devtools test error", DevTools.Registry.Execute("logs.show-recent 1").Message);
 		}
 
+		[UnityTest]
+		public IEnumerator PlainLogsAreRecordedButShowRecentListsProblems()
+		{
+			DevToolsHost.Ensure();
+			DevToolsHost.ClearLogs();
+			int version = DevToolsHost.LogVersion;
+			Debug.Log("devtools plain log");
+			yield return null;
+			Assert.AreEqual(1, DevToolsHost.LogCount);
+			Assert.AreEqual(0, DevToolsHost.ErrorCount);
+			Assert.Greater(DevToolsHost.LogVersion, version, "the console view redraws on a new entry");
+			Assert.AreEqual("devtools plain log", DevToolsHost.Logs.Last().Message);
+			Assert.AreEqual("nothing logged", DevTools.Registry.Execute("logs.show-recent 5").Message);
+		}
+
 		sealed class Inline : IDevModule
 		{
 			readonly System.Action<DevRegistry> _f;

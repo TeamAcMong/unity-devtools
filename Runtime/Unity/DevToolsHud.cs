@@ -15,7 +15,8 @@ namespace DreamTech.DevTools.Unity
 	/// <list type="bullet">
 	/// <item>DEV pill: drag to move, tap to open; shows the fps and a badge with the error count of the
 	/// console; a long-press (0.5 s) expands it to the pinned watches and back.</item>
-	/// <item>Tabs: Quick (quick + starred commands, search), one per category, Scenarios (presets), Watch, Console, Log.</item>
+	/// <item>Tabs: Quick (quick + starred commands, search), one per category, Scenarios (presets), Watch, Console, Log. The Logs
+	/// category page is the in-game Unity console (see DevToolsHud.Logs).</item>
 	/// <item>Open keys (default F1 and `), hide key (F2) and a multi-finger tap (default 3) from <see cref="DevToolsSettings"/>.</item>
 	/// </list>
 	/// The panel sorts above every game canvas and takes part in the EventSystem raycasts, so a tap on the HUD never reaches the
@@ -56,6 +57,8 @@ namespace DreamTech.DevTools.Unity
 			public const int ToastMaxCharacters = 110;
 			public const int PathTokenMinLength = 12;
 			public const int MaxLogRows = 150;
+			public const int MaxConsoleRows = 150;
+			public const int ConsoleRowCharacters = 240;
 			public const int MaxDropdownOptions = 500;
 		}
 

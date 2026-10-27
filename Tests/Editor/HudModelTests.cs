@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using DreamTech.DevTools.Unity;
 using NUnit.Framework;
 using UnityEngine;
@@ -76,6 +78,53 @@ namespace DreamTech.DevTools.Tests
 			Assert.IsTrue(CornerTapCounter.IsInCorner(new Vector2(20f, 1900f), 1080, 1920, 0.14f));
 			Assert.IsFalse(CornerTapCounter.IsInCorner(new Vector2(20f, 100f), 1080, 1920, 0.14f), "bottom-left is not it");
 			Assert.IsFalse(CornerTapCounter.IsInCorner(new Vector2(500f, 1900f), 1080, 1920, 0.14f), "top-middle is not it");
+		}
+
+		static DevToolsHost.LogRecord Entry(int id, LogType type, string message) =>
+			new DevToolsHost.LogRecord { Id = id, Type = type, Message = message, Stack = "" };
+
+		static readonly DevToolsHost.LogRecord[] SampleLogs =
+		{
+			Entry(1, LogType.Log, "boot"),
+			Entry(2, LogType.Warning, "slow frame"),
+			Entry(3, LogType.Error, "save failed"),
+			Entry(4, LogType.Log, "boot"),
+			Entry(5, LogType.Exception, "NullReferenceException"),
+			Entry(6, LogType.Log, "Level 7 loaded"),
+		};
+
+		static int[] Ids(List<DevLogFilter.Row> rows) => rows.Select(r => SampleLogs[r.Index].Id).ToArray();
+
+		[Test]
+		public void LogFilter_NewestFirstAndByKind()
+		{
+			var rows = new List<DevLogFilter.Row>();
+			DevLogFilter.Build(SampleLogs, DevLogKinds.All, "", false, 100, rows);
+			CollectionAssert.AreEqual(new[] { 6, 5, 4, 3, 2, 1 }, Ids(rows));
+			DevLogFilter.Build(SampleLogs, DevLogKinds.Error, "", false, 100, rows);
+			CollectionAssert.AreEqual(new[] { 5, 3 }, Ids(rows), "exceptions count as errors");
+			DevLogFilter.Build(SampleLogs, DevLogKinds.Warning | DevLogKinds.Log, "", false, 2, rows);
+			CollectionAssert.AreEqual(new[] { 6, 4 }, Ids(rows), "capped at maxRows, newest kept");
+		}
+
+		[Test]
+		public void LogFilter_SearchIgnoresCase()
+		{
+			var rows = new List<DevLogFilter.Row>();
+			DevLogFilter.Build(SampleLogs, DevLogKinds.All, "LEVEL", false, 100, rows);
+			CollectionAssert.AreEqual(new[] { 6 }, Ids(rows));
+		}
+
+		[Test]
+		public void LogFilter_CollapseCountsRepeatsAtTheNewest()
+		{
+			var rows = new List<DevLogFilter.Row>();
+			DevLogFilter.Build(SampleLogs, DevLogKinds.All, "", true, 100, rows);
+			CollectionAssert.AreEqual(new[] { 6, 5, 4, 3, 2 }, Ids(rows));
+			Assert.AreEqual(2, rows[2].Count, "both 'boot' logs fold into the newer one");
+			DevLogFilter.Build(SampleLogs, DevLogKinds.Log, "", true, 1, rows);
+			Assert.AreEqual(1, rows.Count);
+			Assert.AreEqual(1, rows[0].Count, "a capped list still counts only its own group");
 		}
 	}
 }

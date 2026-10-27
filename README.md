@@ -112,7 +112,7 @@ console chỉ cần gõ phần đầu, miễn là phần đó không trùng vớ
 | Ads | Ép kết quả quảng cáo game tự hiện: Rewarded / Interstitial / Banner → `Normal`, `ForceSuccess`, `ForceFail`, `ForceNoFill` |
 | Inspector | `show <root> [path]`, `set <root.path> <giá trị>`, `find <chữ>`: đọc và ghi field/property public bằng reflection (list, dictionary, enum, bool, số, chuỗi) |
 | Engine | time scale, pause + step frame, FPS mục tiêu, quality, tắt tiếng / âm lượng, nạp scene, screenshot (có hoặc không HUD), GC, hierarchy, tìm object, **UI at point** (xem UI nào đang nhận hay chặn một tap) |
-| Logs | số lỗi / cảnh báo (viên DEV chuyển sang đỏ khi có lỗi), `show-recent` kèm stack, `clear` |
+| Logs | **console Unity trong game**: mọi log từ lúc boot, lọc theo loại / chữ, gộp dòng trùng, chạm xem stack, copy, clear; số lỗi / cảnh báo (viên DEV chuyển sang đỏ khi có lỗi), `show-recent` kèm stack, `clear` |
 | HUD | mở panel ở một tab, đóng, ẩn toàn bộ, cỡ chữ, độ trong suốt |
 | Data | PlayerPrefs get / set / delete, mở thư mục dữ liệu, **xoá save ở lần khởi động sau** |
 | Creative | Dọn màn hình để quay / chụp: ẩn **toàn bộ UI game**, ẩn **một canvas** theo tên, ẩn chính viên DEV. Ẩn bằng `Canvas.enabled` (UI vẫn chạy tween / Update), hiện lại đúng những gì dev tools đã ẩn |

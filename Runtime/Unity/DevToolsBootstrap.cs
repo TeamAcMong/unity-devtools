@@ -42,6 +42,7 @@ namespace DreamTech.DevTools.Unity
 		{
 			DevTools.Reset();
 			DevToolsSettings.Reload();
+			DevToolsHost.StartLogCapture();
 		}
 
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
