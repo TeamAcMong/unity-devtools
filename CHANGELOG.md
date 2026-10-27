@@ -2,6 +2,16 @@
 
 Định dạng theo [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), phiên bản theo [SemVer](https://semver.org/).
 
+## [0.4.3] - 2026-10-27
+
+### Added
+- **Console Unity trong game ở trang Logs**, thay được cho IngameDebugConsole của bộ cheat cũ: danh sách log mới nhất trước, lọc theo loại (Errors / Warnings / Logs, mỗi chip kèm số đếm), lọc theo chữ, **Collapse** gộp các dòng trùng kèm số lần, chạm một dòng để xem toàn bộ nội dung + stack và chép, **Copy** chép những gì đang hiện (kèm stack), **Clear**. Thanh công cụ nằm cố định trên danh sách; các lệnh Logs nằm dưới danh sách.
+- `DevToolsHost.LogCount`, `DevToolsHost.LogVersion` (tăng mỗi khi có log mới hoặc xoá), `DevToolsHost.IsError`, `LogRecord.Id`; `DevLogFilter` / `DevLogKinds` (lọc và gộp, không phụ thuộc UI).
+
+### Changed
+- `DevToolsHost` ghi **mọi** loại log (trước đây chỉ cảnh báo và lỗi), tối đa 1000 dòng (trước đây 300), và bắt đầu ghi từ `SubsystemRegistration` thay vì khi host được tạo sau scene đầu tiên, nên log lúc boot không bị mất.
+- `logs.show-recent` và watch "Last error" vẫn chỉ lấy lỗi (cảnh báo khi bật `warnings`), không lẫn log thường.
+
 ## [0.4.2] - 2026-10-22
 
 ### Fixed
